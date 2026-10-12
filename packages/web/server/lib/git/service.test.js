@@ -759,6 +759,55 @@ describe.runIf(canRunGit())('untracked diffs', () => {
   });
 });
 
+// An external diff configured in git (difftastic via diff.external, or
+// GIT_EXTERNAL_DIFF in the session environment) replaces patch text with its own
+// format. The UI parses patches as unified diffs, so patch-producing calls must
+// always use git's internal diff machinery.
+describe.runIf(canRunGit())('diff output with diff.external configured', () => {
+  // `echo` runs on every platform's shell and its output is never a unified diff.
+  // simple-git's safety plugin refuses to configure diff.external, so the fixture
+  // writes it through runGit like any other local git config.
+  const useFakeExternalDiff = (tmpDir) => runGit(tmpDir, ['config', 'diff.external', 'echo EXTERNAL-DIFF-OUTPUT']);
+
+  it('returns a unified working-tree diff the UI parser can split', async () => {
+    const { tmpDir, git } = await createTempRepo();
+    useFakeExternalDiff(tmpDir);
+    await git.commit('one', { '--allow-empty': null });
+    await writeFile(tmpDir, 'file.txt', ORIGINAL_FILE);
+    await git.add('file.txt');
+    await git.commit('Initial');
+    await writeFile(tmpDir, 'file.txt', EDITED_FILE);
+
+    const diff = await getDiff(tmpDir, { path: 'file.txt' });
+    expect(diff).toContain('diff --git');
+    expect(diff).not.toContain('EXTERNAL-DIFF-OUTPUT');
+    // ORIGINAL_FILE and EDITED_FILE change line 1 and line 20: two hunks. The
+    // point is that the parser sees hunks at all — difftastic-format text splits to zero.
+    expect(splitHunks(diff)).toHaveLength(2);
+  });
+
+  it('keeps untracked-file and range diffs unified', async () => {
+    const { tmpDir, git } = await createTempRepo();
+    useFakeExternalDiff(tmpDir);
+    await git.commit('one', { '--allow-empty': null });
+    await git.raw(['branch', 'base-branch']);
+    await writeFile(tmpDir, 'file.txt', 'changed\n');
+    await git.add('file.txt');
+    await git.commit('two');
+    await git.raw(['branch', 'head-branch']);
+    await writeFile(tmpDir, 'new.txt', 'untracked\n');
+
+    const [untracked] = await getUntrackedDiffs(tmpDir, ['new.txt']);
+    expect(untracked).toContain('@@');
+    expect(untracked).not.toContain('EXTERNAL-DIFF-OUTPUT');
+
+    const range = await getRangeDiff(tmpDir, { base: 'base-branch', head: 'head-branch' });
+    expect(range).toContain('diff --git');
+    expect(range).toContain('@@');
+    expect(range).not.toContain('EXTERNAL-DIFF-OUTPUT');
+  });
+});
+
 describe('symlink diffs', () => {
   it('treats an untracked directory symlink as a link in patch and split diffs', async () => {
     if (!canRunGit() || process.platform === 'win32') return;
