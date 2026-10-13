@@ -8,10 +8,8 @@ name: nix-hashes
 
 on:
   push:
-    branches: [main]
-    paths:
-      - bun.lock
-      - packages/electron/package.json
+    branches:
+      - test/nix-hashes-ci
   workflow_dispatch:
 
 permissions:
