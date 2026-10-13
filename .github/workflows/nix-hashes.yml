@@ -56,6 +56,4 @@ jobs:
             --base main \
             --head nix/hash-bake \
             --title "chore(nix): re-bake dependency hashes" \
-            --body "Automated re-bake after a change to bun.lock or packages/electron/package.json (commit ${GITHUB_SHA}).
-
-Reproduce locally with nix run .#update-hashes. The script verifies each baked hash with a clean build before exiting, so the diff is the hash lines only."
+            --body "Automated re-bake after a change to bun.lock or packages/electron/package.json (commit ${GITHUB_SHA}). Reproduce locally with nix run .#update-hashes; the script verifies each baked hash with a clean build before exiting, so the diff is the hash lines only."
