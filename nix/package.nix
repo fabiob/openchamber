@@ -86,7 +86,7 @@ let
 
     outputHashMode = "recursive";
     outputHashAlgo = "sha256";
-    outputHash = "sha256-ELkJIR7D7y4TA36qyFyLRzqPI45uOi+8H7xe4diBWZM=";
+    outputHash = "sha256-ZZkJIR7D7y4TA36qyFyLRzqPI45uOi+8H7xe4diBWZM=";
 
     # Keep node_modules byte-identical to what bun produced (Docker parity):
     # no shebang rewriting, no patchelf, no symlink checks. Workspace .bin
