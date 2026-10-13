@@ -45,9 +45,8 @@ jobs:
           git add flake.nix flake.lock nix/package.nix
           git commit \
             -m "chore(nix): re-bake dependency hashes" \
-            -m "Automated re-bake after a change to bun.lock or packages/electron/package.json (${GITHUB_SHA}).
-
-Reproduce locally with nix run .#update-hashes."
+            -m "Automated re-bake after a change to bun.lock or packages/electron/package.json (${GITHUB_SHA})." \
+            -m "Reproduce locally with nix run .#update-hashes."
           git push --force origin nix/hash-bake
           if [ "$(gh pr list --head nix/hash-bake --state open --json number --jq 'length')" = "1" ]; then
             echo "an open PR for nix/hash-bake already exists — the force-push updated it"
