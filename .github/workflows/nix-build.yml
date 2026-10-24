@@ -1,0 +1,38 @@
+# Real builds for bake PRs and flake-structure PRs: a bake PR proves its
+# freshly baked bunCache hash reproduces from bun.lock on clean runners on
+# every platform the flake targets. bun.lock alone is deliberately not in
+# the paths: a dependency bump merges on eval checks and gets its hash in
+# the bake PR that follows (nix-hashes.yml), which this matrix then proves.
+# Standard hosted runners are free for this public repo; no cache daemon,
+# no secrets, so the proof needs nothing but the lockfile.
+name: nix-build
+
+on:
+  pull_request:
+    paths:
+      - flake.lock
+      - nix/**
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build the server with the baked dependency cache
+        run: nix build --no-link .#openchamber -L
