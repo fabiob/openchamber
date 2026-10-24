@@ -59,10 +59,78 @@ let
       ];
   };
 
-  # Fixed-output derivation pinning the whole bun dependency tree.
-  # Mirrors the Dockerfile deps stage: bun install --frozen-lockfile
-  # --ignore-scripts. Patches from package.json patchedDependencies are
-  # applied by bun itself; native builds are skipped, matching Docker.
+  # Fixed-output derivation holding bun's dependency cache for the whole
+  # workspace. Only fetched content goes in here: tarballs are
+  # integrity-pinned by bun.lock, so one baked hash is valid on every
+  # machine and architecture. The warm install fetches every platform
+  # variant we distribute for (linux + darwin): bun.lock records all
+  # variants, and the offline install in bunDeps below silently skips
+  # uncached optionals, so a cache warmed on linux must not starve a darwin
+  # install.
+  bunCache = stdenv.mkDerivation {
+    pname = "openchamber-bun-cache";
+    inherit version src;
+
+    nativeBuildInputs = [ bun ];
+
+    configurePhase = ":";
+    buildPhase = ''
+      export HOME="$PWD/.bun-home"
+      mkdir -p "$HOME"
+      export BUN_INSTALL_CACHE_DIR="$PWD/bun-cache"
+      bun install --frozen-lockfile --ignore-scripts --os=linux --os=darwin --cpu='*' --libc='*'
+    '';
+    installPhase = ''
+      # Phases run in the same build directory, in separate shells, so the
+      # cache path is spelled out here instead of exported above.
+      mkdir -p "$out"
+      cp -a "$PWD/bun-cache" "$out/cache"
+      # bun writes the cache's index symlinks
+      # (cache/<name>/<version> → cache/<name>@<version>@@@1, scoped ones
+      # under cache/@scope/) with ABSOLUTE targets pointing at the
+      # install-time cache location. On linux that location is the fixed
+      # /build, so the hash reproduces; on darwin the sandbox build
+      # directory is randomized per run, which made this FOD hash
+      # differently on every run. Rewrite each target relative to the
+      # link's own directory — the target dir is always the link dir's
+      # parent — so the content depends only on the fetched packages.
+      find "$out/cache" -type l | while read -r link; do
+        target=$(readlink "$link")
+        case "$target" in
+          */bun-cache/*) ;;
+          *) continue ;;
+        esac
+        # The target dir is always the link dir's parent, so the relative
+        # form is ../ plus the target's last path segment.
+        ln -sfn "../$(basename "$target")" "$link"
+      done
+      echo "[bun-cache] absolute-target symlinks remaining: $(find "$out/cache" -type l -lname '/*' | wc -l | tr -d ' ')"
+    '';
+
+    outputHashMode = "recursive";
+    outputHashAlgo = "sha256";
+    # The baked hashes live in one data file (nix/hashes.json), keyed per
+    # system, so the automated bake PR touches a single file.
+    outputHash =
+      (builtins.fromJSON (builtins.readFile ./hashes.json)).bunCache.${stdenv.hostPlatform.system};
+
+    # The cache is data for the install below; keep bun's files
+    # byte-identical to what bun wrote.
+    dontFixup = true;
+  };
+
+  # Normal (input-addressed) install of node_modules from the warmed cache.
+  # Deliberately not a fixed-output derivation: bun install is not
+  # reproducible across machines, so hashing its output can only produce
+  # machine-relative hashes (CI runners baked five different node_modules
+  # hashes from near-identical inputs, and every hash but the baking
+  # runner's broke someone's build). The dependency set stays pinned twice:
+  # integrity hashes in bun.lock, and the bunCache FOD above. The Nix
+  # sandbox has no network, so nothing outside the warmed cache can enter
+  # the install. Mirrors the Dockerfile deps stage: bun install
+  # --frozen-lockfile --ignore-scripts. Patches from package.json
+  # patchedDependencies are applied by bun itself; native builds are
+  # skipped, matching Docker.
   bunDeps = stdenv.mkDerivation {
     pname = "openchamber-bun-deps";
     inherit version src;
@@ -73,7 +141,11 @@ let
     buildPhase = ''
       export HOME="$PWD/.bun-home"
       mkdir -p "$HOME"
-      bun install --frozen-lockfile --ignore-scripts
+      export BUN_INSTALL_CACHE_DIR="$PWD/bun-cache"
+      mkdir -p "$BUN_INSTALL_CACHE_DIR"
+      cp -a "${bunCache}/cache/." "$BUN_INSTALL_CACHE_DIR/"
+      chmod -R u+w "$BUN_INSTALL_CACHE_DIR"
+      bun install --frozen-lockfile --ignore-scripts --offline
     '';
     installPhase = ''
       mkdir -p "$out"
@@ -83,12 +155,6 @@ let
         cp -a "$dir" "$out/$dir"
       done
     '';
-
-    outputHashMode = "recursive";
-    outputHashAlgo = "sha256";
-    # The baked hashes live in one data file (nix/hashes.json) so the
-    # automated bake PR touches a single file.
-    outputHash = (builtins.fromJSON (builtins.readFile ./hashes.json)).bunDeps;
 
     # Keep node_modules byte-identical to what bun produced (Docker parity):
     # no shebang rewriting, no patchelf, no symlink checks. Workspace .bin
@@ -173,7 +239,7 @@ stdenv.mkDerivation {
   '';
 
   passthru = {
-    inherit bunDeps src;
+    inherit bunDeps bunCache src;
     core = openchamberCore;
   };
 
@@ -182,8 +248,13 @@ stdenv.mkDerivation {
     homepage = "https://github.com/openchamber/openchamber";
     license = lib.licenses.mit;
     mainProgram = "openchamber";
-    # x86_64-linux only: the aarch64 dependency hash is unverified (see the
-    # flake-level comment on the opencode input's per-system hashes).
-    platforms = [ "x86_64-linux" ];
+    # Claims follow the CI build matrix (nix-eval/nix-build workflows): a
+    # platform stays listed while its runner builds the server green. The
+    # desktop (nix/gui.nix) is verified on x86_64-linux only.
+    platforms = [
+      "x86_64-linux"
+      "aarch64-linux"
+      "aarch64-darwin"
+    ];
   };
 }

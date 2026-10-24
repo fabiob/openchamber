@@ -2,17 +2,25 @@
 # Re-bake the fixed-output dependency hashes after bun.lock or the pinned
 # OpenCode tag changes.
 #
-# IMPORTANT: run this from a COMMITTED tree. Nix's evaluation cache can serve
-# stale flake sources for dirty git trees, which makes the script fight its
-# own edits (the sentinel swap may not be visible to the build). Commit
-# first, run, then commit the baked hash it writes.
+# The hashes are keyed per system in nix/hashes.json, and this script bakes
+# the entries for the system it runs on. opencodeNodeModules pins the
+# OpenCode CLI's node_modules at the locked input revision; bunCache pins
+# bun's fetched dependency cache.
+#
+# The opencode pass runs first so every later bake build evaluates a synced
+# pin pair: the opencode input first moves to the tag packages/electron
+# pins (opencodeCli.version), which the flake's eval-time assertion
+# enforces.
+#
+# Every nix call passes --option eval-cache false. The evaluation cache can
+# serve stale flake sources for dirty git trees, which once made CI's verify
+# step confirm the sentinel state instead of the freshly baked hash.
+# hashes.json edits go through jq so the per-system nesting stays intact.
 #
 # Usage:
 #   nix run .#update-hashes
-#       Re-bake both hashes at the currently locked state (bun.lock, and the
-#       opencode input revision recorded in flake.lock). The opencode
-#       input first moves to the tag packages/electron pins
-#       (opencodeCli.version), which the flake's eval-time assertion enforces.
+#       Re-bake this system's hashes at the currently locked state (bun.lock,
+#       and the opencode input revision recorded in flake.lock).
 #
 # Mechanism: a build-produced fixed-output derivation can only be hashed by
 # building it. Each hash is swapped for a sentinel (fakeSha256), the build
@@ -30,20 +38,27 @@ set -euo pipefail
 # a variable/array and the nested nix calls failed with parser errors that
 # were impossible to reproduce from the shell. Direct calls with the ambient
 # flake configuration (enabled system-wide on NixOS) are the reliable form.
+# The app wrapper in flake.nix puts jq on PATH.
 
-# Both baked hashes live in nix/hashes.json — the single file the bake
-# PR touches. flake.lock changes alongside it only when the OpenCode tag
-# moves.
+# The system whose hashes this run bakes and verifies.
+sys=$(nix --option eval-cache false eval --raw --impure --expr 'builtins.currentSystem')
+
+bun_file="nix/hashes.json"
 
 log() { printf '[update-hashes] %s\n' "$*"; }
 
-# opencode-hash <file>: the x86_64 node_modules hash baked for the opencode
-# input.
-opencode_hash() { grep -oP '"opencodeNodeModules": "\Ksha256-[A-Za-z0-9+/=]+(?=")' "$1" | head -1; }
+# read_key <key>: the hash baked for this system under <key>, empty if none.
+read_key() { jq -r --arg s "$sys" ".[\"$1\"][\$s] // empty" "$bun_file"; }
+
+# set_key <key> <value>: write hashes.json[<key>][<sys>] = <value>.
+set_key() {
+  jq --arg s "$sys" --arg v "$2" ".[\"$1\"][\$s] = \$v" "$bun_file" > "$bun_file.tmp"
+  mv "$bun_file.tmp" "$bun_file"
+}
 
 # got-hash <logfile> <drv-name-pattern>: the hash the named failing
 # fixed-output derivation reported. A build's closure can hold several FODs
-# (bun deps, the opencode CLI's node_modules, the models-dev SDK's), so
+# (the bun cache, the opencode CLI's node_modules, the models-dev SDK's), so
 # anchor on the derivation name — the first "got:" in the log may belong to
 # a different one when more than one pin moved before a run.
 got_hash() {
@@ -53,28 +68,32 @@ got_hash() {
   ' "$1"
 }
 
-# rehash <file> <current-hash> <build-target> <label> <drv-name-pattern>
-#   Swap current -> sentinel, build, bake the reported hash, verify.
+# rehash <key> <target> <label> <drv-name-pattern>
+#   Swap this system's hash -> sentinel, build, bake the reported hash,
+#   verify. An unset key (a platform never baked before) starts at the
+#   sentinel directly.
 rehash() {
-  local file="$1" current="$2" target="$3" label="$4" drv_re="$5"
-  local err got
+  local key="$1" target="$2" label="$3" drv_re="$4"
+  local err got current
 
+  current=$(read_key "$key")
   if [[ "$current" == "$FAKE_SENTINEL" ]]; then
     log "$label: already at the sentinel — building to capture the real hash"
   else
-    sed -i "s|$current|$FAKE_SENTINEL|" "$file"
-    log "$label: sentinel set, building to discover the hash"
+    if [[ -z "$current" ]]; then
+      log "$label: no hash baked for $sys yet — sentinel set, building to discover it"
+    else
+      log "$label: current hash $current"
+      log "$label: sentinel set, building to discover the hash"
+    fi
+    set_key "$key" "$FAKE_SENTINEL"
   fi
 
   err=$(mktemp)
-  if nix build --no-link "$target" -L >"$err" 2>&1; then
+  if nix build --option eval-cache false --no-link "$target" -L >"$err" 2>&1; then
     rm -f "$err"
-    if [[ "$current" == "$FAKE_SENTINEL" ]]; then
-      log "$label: build SUCCEEDED with the sentinel — the derivation is not in this build's closure"
-      exit 1
-    fi
-    log "$label: already up to date ($current)"
-    return 0
+    log "$label: build SUCCEEDED with the sentinel — the derivation is not in this build's closure"
+    exit 1
   fi
   got=$(got_hash "$err" "$drv_re" || true)
   if [[ -z "$got" ]]; then
@@ -85,15 +104,13 @@ rehash() {
   fi
   rm -f "$err"
 
-  sed -i "s|$FAKE_SENTINEL|$got|" "$file"
+  set_key "$key" "$got"
   log "$label: baked $got — verifying"
-  nix build --no-link "$target" -L >/dev/null
+  nix build --option eval-cache false --no-link "$target" -L >/dev/null
   log "$label: verified"
 }
 
 FAKE_SENTINEL="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-
-bun_file="nix/hashes.json"
 
 # ─── 1. opencode CLI node_modules (upstream flake at the pin) ──
 #
@@ -111,23 +128,19 @@ tag="v$cli_version"
 current_tag=$(grep -oP 'github:anomalyco/opencode/\K[v0-9.]+' flake.nix | head -1)
 if [[ "$current_tag" != "$tag" ]]; then
   sed -i "s|github:anomalyco/opencode/[^\"]*|github:anomalyco/opencode/$tag|" flake.nix
-  nix flake update opencode >/dev/null
+  nix --option eval-cache false flake update opencode >/dev/null
   log "opencode: input moved to $tag (packages/electron pins $cli_version)"
 else
   log "opencode: input already at $tag"
 fi
 
-cli_hash=$(opencode_hash "$bun_file")
-log "opencode-cli: current hash $cli_hash"
-rehash "$bun_file" "$cli_hash" ".#opencode-cli.node_modules" "opencode-cli" "opencode-node_modules"
+rehash opencodeNodeModules ".#opencode-cli.node_modules" "opencode-cli" "opencode-node_modules"
 
-# ─── 2. bun dependencies (openchamber bun.lock) ───────────────
+# ─── 2. bun dependency cache (openchamber bun.lock) ───────────
 
-bun_current=$(grep -oP '"bunDeps": "\Ksha256-[A-Za-z0-9+/=]+(?=")' "$bun_file" | head -1)
-log "bun-deps: current hash $bun_current"
 # Build the FOD itself (via its passthru), not the packages that consume it:
 # the hash check happens in the derivation, so the sdk/web builds and the
 # server assembly add nothing to the bake.
-rehash "$bun_file" "$bun_current" ".#openchamber.bunDeps" "bun-deps" "openchamber-bun-deps"
+rehash bunCache ".#openchamber.bunCache" "bun-cache" "openchamber-bun-cache"
 
 log "done — commit nix/hashes.json (and flake.lock when the tag moved)"

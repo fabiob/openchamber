@@ -34,5 +34,6 @@ jobs:
           nix eval --raw .#openchamber-desktop.drvPath
           nix eval --raw .#opencode-cli.drvPath
           nix eval --raw .#openchamber.bunDeps.drvPath
+          nix eval --raw .#openchamber.bunCache.drvPath
           nix eval --raw .#opencode-cli.node_modules.drvPath
           nix flake check --no-build

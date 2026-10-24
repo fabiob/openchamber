@@ -1,9 +1,12 @@
 # Keeps the flake's baked dependency hashes in step with the two files that
-# decide them: bun.lock (the bun-deps fixed-output derivation) and
+# decide them: bun.lock (the bunCache fixed-output derivation) and
 # packages/electron/package.json (the pinned OpenCode CLI tag). When either
 # moves on main, the flake fails to evaluate until the tag and hashes are
-# re-baked; this workflow runs the same `nix run .#update-hashes` a
-# contributor would run and opens a PR with the result.
+# re-baked; this workflow bakes every declared platform sequentially —
+# x86_64-linux first (it may move the opencode tag), then aarch64-linux and
+# aarch64-darwin, each building on the previous leg's branch — and opens one
+# PR with the result. The nix-build matrix proves each platform's hash on
+# its own runner before that PR can merge.
 name: nix-hashes
 
 on:
