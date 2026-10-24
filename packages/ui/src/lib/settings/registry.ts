@@ -651,6 +651,7 @@ export type DesktopSettings = { -readonly [K in SettingsKey]?: FieldValue<(typeo
 export const LOCAL_DEVICE_KEYS = [
   'theme',
   'isSidebarOpen',
+  'sidebarFoldedForExpandedZone',
   'sidebarWidth',
   'contextPanelByDirectory',
   'contextRailOrder',

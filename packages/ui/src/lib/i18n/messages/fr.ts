@@ -15,6 +15,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -28,6 +29,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict = {
   "opencodeCompatibility.bundled": "OpenCode est inclus dans OpenChamber. Mettez OpenChamber à jour pour obtenir OpenCode v2.",
@@ -154,6 +156,7 @@ export const dict = {
   ...usageStatsI18n.fr,
   ...webSearchI18n.fr,
   ...sessionWarmingI18n.fr,
+  ...heapSnapshotI18n.fr,
   ...overviewI18n.fr,
   ...isolatedSpacesI18n.fr,
   ...sourceBoardI18n.fr,
@@ -167,6 +170,7 @@ export const dict = {
   ...pluginsGridI18n.fr,
   ...integrationsCatalogI18n['fr'],
   ...diffFindI18n['fr'],
+  ...guestStatusViewI18n['fr'],
   'terminalView.actions.attachSelection': 'Joindre la sortie sélectionnée',
   'terminalView.actions.copySelection': 'Copier la sortie sélectionnée',
   'terminalView.toast.selectionCopied': 'Sortie copiée',
@@ -3103,6 +3107,7 @@ export const dict = {
   'mainLayout.mobile.closeDrawerAria': 'Fermer le tiroir',
   'sortableTabsStrip.aria.tabs': 'Onglets',
   'openChamberLogo.aria.logo': 'Logo OpenChamber',
+  'markdownRenderer.code.proposal': 'Proposition',
   'markdownRenderer.code.actions.copyTitle': 'Copier le code',
   'markdownRenderer.code.actions.copiedTitle': 'Copié',
   'markdownRenderer.table.actions.copyTitle': 'Copier le tableau',
@@ -3479,6 +3484,7 @@ export const dict = {
   'chat.toolPart.showFormattedJson': 'Afficher le JSON formaté',
   'chat.toolPart.showNavigableJson': 'Afficher le JSON navigable',
   'chat.toolPart.openFile': 'Ouvrir le fichier',
+  'chat.toolPart.openImageExpanded': 'Ouvrir',
   'chat.toolPart.openFileAtFirstChange': 'Ouvrir le fichier à la première modification',
   'chat.toolPart.openFileDiff': 'Ouvrir les différences du fichier',
   'chat.toolPart.copyOutput': 'Copier la sortie',

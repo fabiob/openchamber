@@ -16,6 +16,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -29,6 +30,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict: Record<I18nKey, string> = {
   "opencodeCompatibility.bundled": "OpenCode jest dołączony do OpenChamber. Zaktualizuj OpenChamber, aby uzyskać OpenCode v2.",
@@ -155,6 +157,7 @@ export const dict: Record<I18nKey, string> = {
   ...usageStatsI18n.pl,
   ...webSearchI18n.pl,
   ...sessionWarmingI18n.pl,
+  ...heapSnapshotI18n.pl,
   ...overviewI18n.pl,
   ...isolatedSpacesI18n.pl,
   ...sourceBoardI18n.pl,
@@ -168,6 +171,7 @@ export const dict: Record<I18nKey, string> = {
   ...pluginsGridI18n.pl,
   ...integrationsCatalogI18n['pl'],
   ...diffFindI18n['pl'],
+  ...guestStatusViewI18n['pl'],
   'terminalView.actions.attachSelection': 'Dołącz zaznaczone dane wyjściowe',
   'terminalView.actions.copySelection': 'Kopiuj zaznaczone dane wyjściowe',
   'terminalView.toast.selectionCopied': 'Skopiowano dane wyjściowe',
@@ -1645,6 +1649,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.showFormattedJson': 'Pokaż sformatowany JSON',
   'chat.toolPart.showNavigableJson': 'Pokaż nawigowalny JSON',
   'chat.toolPart.openFile': 'Otwórz plik',
+  'chat.toolPart.openImageExpanded': 'Otwórz',
   'chat.toolPart.openFileAtFirstChange': 'Otwórz plik przy pierwszej zmianie',
   'chat.toolPart.openFileDiff': 'Otwórz różnice pliku',
   'chat.toolPart.copyOutput': 'Kopiuj wyjście',
@@ -2902,6 +2907,7 @@ export const dict: Record<I18nKey, string> = {
   'markdownRenderer.mermaid.actions.zoomOutTitle': 'Pomniejsz',
   'markdownRenderer.mermaid.actions.resetViewTitle': 'Resetuj widok',
   'markdownRenderer.mermaid.toast.downloadFailed': 'Nie udało się pobrać diagramu',
+  'markdownRenderer.code.proposal': 'Propozycja',
   'markdownRenderer.code.actions.copyTitle': 'Kopiuj kod',
   'markdownRenderer.code.actions.copiedTitle': 'Skopiowano',
   'markdownRenderer.table.actions.copyTitle': 'Kopiuj tabelę',

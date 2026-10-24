@@ -1248,7 +1248,7 @@ function SessionGroupSectionBase(props: SessionGroupSectionProps): React.ReactNo
                 ) : (
                   <Icon name="git-branch" className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
                 )}
-                <span className="min-w-0 truncate text-[11px] font-medium text-muted-foreground/80">
+                <span className="min-w-0 truncate text-[0.6875rem] font-medium text-muted-foreground/80">
                   {statusLine.label}
                 </span>
               </span>

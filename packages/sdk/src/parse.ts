@@ -47,6 +47,8 @@ import {
   SOURCE_CONTROL_URL_TOKENS,
   type SourceControlContribution,
 } from './manifest.ts';
+import { isGuestRequestPath } from './contract.ts';
+import { GUEST_STATUS_SOURCE_INTERVAL_MAX, GUEST_STATUS_SOURCE_INTERVAL_MIN } from './status-view.ts';
 import {
   GUEST_FILE_EDITORS_MAX,
   GUEST_FILE_EDITOR_PATTERNS_MAX,
@@ -453,12 +455,16 @@ const contributesSchema = z.object({
     title: z.string().trim().min(1).max(200).optional(),
   })]).optional(),
   statusSection: z.union([z.literal(true), z.object({
-    entry: z.string().trim().refine((value) => isSafeAssetPath(value) && value.toLowerCase().endsWith('.html')),
+    entry: z.string().trim().refine((value) => isSafeAssetPath(value) && value.toLowerCase().endsWith('.html')).optional(),
+    source: z.object({
+      path: z.string().trim().refine(isGuestRequestPath),
+      interval: z.number().int().min(GUEST_STATUS_SOURCE_INTERVAL_MIN).max(GUEST_STATUS_SOURCE_INTERVAL_MAX).optional(),
+    }).strict().optional(),
     title: z.string().trim().min(1).max(GUEST_STATUS_SECTION_TITLE_MAX).optional(),
     height: z.number().int().min(GUEST_STATUS_SECTION_HEIGHT_MIN).max(GUEST_STATUS_SECTION_HEIGHT_MAX).optional(),
     defaultExpanded: z.boolean().optional(),
     requiresProject: z.boolean().optional(),
-  })]).optional(),
+  }).refine((section) => section.entry !== undefined || section.source !== undefined)]).optional(),
   capabilities: z.array(z.enum(DECLARED_GUEST_CAPABILITIES)).max(8).optional(),
   integration: integrationSchema.optional(),
   service: serviceSchema.optional(),
@@ -478,6 +484,16 @@ const contributesSchema = z.object({
 /**
  * Contributions that need either the panel or background execution frame.
  */
+/** A section the host draws from the service's answers: the host is the service's caller. */
+const hasStatusSource = (contributes: z.output<typeof contributesSchema>): boolean => (
+  Boolean(contributes.statusSection && contributes.statusSection !== true && contributes.statusSection.source)
+);
+
+/** A section the host loads as a frame: `true`, or an object with an `entry`. */
+const hasStatusFrame = (contributes: z.output<typeof contributesSchema>): boolean => (
+  contributes.statusSection === true || Boolean(contributes.statusSection?.entry)
+);
+
 const runtimeContributions = (contributes: z.output<typeof contributesSchema>): string[] => {
   const declared: string[] = [];
   if (contributes.page !== undefined) declared.push('page');
@@ -487,7 +503,8 @@ const runtimeContributions = (contributes: z.output<typeof contributesSchema>): 
   // A service the host starts itself (it provides a role or a surface) needs
   // no frame; one that only answers a panel's `serviceRequest` has no caller
   // without one.
-  if (contributes.service !== undefined && !contributes.service.provides?.length && !contributes.service.surface) declared.push('service');
+  if (contributes.service !== undefined && !contributes.service.provides?.length && !contributes.service.surface
+    && !hasStatusSource(contributes)) declared.push('service');
   if (contributes.filesystem !== undefined) declared.push('filesystem');
   if (contributes.origins !== undefined) declared.push('origins');
   if (contributes.actions !== undefined) declared.push('actions');
@@ -535,6 +552,14 @@ export const openChamberManifestSchema = z.object({
       });
       return;
     }
+    // The host reads a source from the extension's service; without one it has nothing to ask.
+    if (hasStatusSource(contributes) && !contributes.service) {
+      ctx.addIssue({
+        code: 'custom', path: ['statusSection', 'source'],
+        message: 'contributes.statusSection.source is read from the extension\'s service; declare contributes.service.',
+      });
+      return;
+    }
     if (hasGuestPage(contributes)) return;
     if (contributes.background) {
       const needsPanel = [];
@@ -547,7 +572,7 @@ export const openChamberManifestSchema = z.object({
       });
       return;
     }
-    if (contributes.statusSection || contributes.fileEditors) {
+    if (hasStatusFrame(contributes) || contributes.fileEditors) {
       // A status section or file editor frame runs code and may use what the
       // package is granted, but it only hosts itself: things the host opens or
       // invokes elsewhere need a panel or background entry.
@@ -653,7 +678,7 @@ const failureFromIssue = (issue: { path: ReadonlyArray<PropertyKey>; code: strin
   if (path === 'contributes.statusSection' || path.startsWith('contributes.statusSection.')) {
     return fail('invalid-status-section', issue.code === 'custom'
       ? issue.message
-      : `contributes.statusSection must be true or { entry: "<package .html>", title?: "1 to ${GUEST_STATUS_SECTION_TITLE_MAX} characters", height?: ${GUEST_STATUS_SECTION_HEIGHT_MIN} to ${GUEST_STATUS_SECTION_HEIGHT_MAX} }.`);
+      : `contributes.statusSection must be true or { entry?: "<package .html>", source?: { path: "/status", interval?: ${GUEST_STATUS_SOURCE_INTERVAL_MIN} to ${GUEST_STATUS_SOURCE_INTERVAL_MAX} }, title?: "1 to ${GUEST_STATUS_SECTION_TITLE_MAX} characters", height?: ${GUEST_STATUS_SECTION_HEIGHT_MIN} to ${GUEST_STATUS_SECTION_HEIGHT_MAX} } with entry, source, or both.`);
   }
   if (path === 'contributes.background' || path.startsWith('contributes.background.')) {
     return fail('invalid-background', 'contributes.background needs an entry ending in .html inside the package.');

@@ -231,6 +231,35 @@ project policies (global wins) before turning a skill off. Writing where the
 skill lives covers the common case with one control, and turning it back on
 clears the skill's exact deny wherever it is, so no file keeps a stale rule.
 
+## Skills catalog list
+
+The catalog page lists one source, or every source's search matches, in
+`skills/catalog/SkillsCatalogRows.tsx`. From 100 rows on it mounts only the
+rows near the viewport, measured inside the settings page's own scroller; a
+shorter list renders every row.
+
+### Why a threshold and not a virtualized list for every source
+
+A source can hold thousands of skills: `sickn33/agentic-awesome-skills` has
+8,451, and mounting them all froze the page for about 28 seconds on a source
+click and up to 47 seconds per search keystroke (#5455). Most built-in
+catalogs hold fewer than 60 rows, and a fully mounted short list keeps the
+browser's find-in-page and Tab order over every row.
+
+### Why the list waits for the page's scroller
+
+A virtualizer attached before it knows the scroller starts at offset 0 and
+scrolls there, so clicking Cursor or a large source on a scrolled page jumped
+to the top. The list finds the scroller first, starts from its `scrollTop`,
+and holds its estimated height meanwhile, because a list of height 0 for one
+render shortens the page and the browser clamps the scroll position.
+
+### Why a row measured at 0 keeps the estimate
+
+A page hidden while the list is mounted measures every row at 0 height. The
+virtualizer would then fit the whole list into the viewport, mount all of it,
+and re-render without end, so a zero measurement keeps the estimated height.
+
 ## Integrations: provider cards
 
 `integrations/IntegrationsPage.tsx` draws one card per source-control provider

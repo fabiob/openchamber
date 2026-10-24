@@ -12,10 +12,13 @@ type MovedContextZone = Exclude<ContextZone, 'right'>;
 
 export const CONTEXT_ZONES: readonly ContextZone[] = ['left', 'right', 'bottom'];
 
+/** A side zone's width until the user resizes it, px, whatever it shows. */
+export const CONTEXT_ZONE_DEFAULT_WIDTH = 640;
+
 /** Surface mode -> zone, for surfaces moved off the right. Per device. */
 export type ContextZonePlacement = Partial<Record<ContextPanelMode, MovedContextZone>>;
 
-/** What one zone shows: open or not, expanded over the chat, and its tab. */
+/** What one zone shows: open or not, expanded beside the chat, and its tab. */
 export type ContextZoneView = {
   isOpen: boolean;
   expanded: boolean;

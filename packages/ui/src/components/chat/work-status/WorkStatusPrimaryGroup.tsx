@@ -34,6 +34,8 @@ import { useSourceControlProvider } from '@/lib/source-control/providers/registr
 import { ProjectActionsButton } from '@/components/layout/ProjectActionsButton';
 import { OpenInAppButton } from '@/components/desktop/OpenInAppButton';
 import { useProjectActionsContext } from '@/hooks/useProjectActionsContext';
+import { PrChecksValue } from './PrChecksValue';
+import { prChecksTooltip } from './prChecks';
 
 type Props = {
   sessionId: string | null;
@@ -286,7 +288,7 @@ export const WorkStatusPrimaryGroup: React.FC<Props> = ({ sessionId, directory, 
               />
               <WorkStatusMeter percent={usagePercent ?? 0} color={meterColor} />
               {contextUsage.state === 'compacted' ? (
-                <p className="mx-1 mb-1 text-[11px] leading-4 text-muted-foreground">
+                <p className="mx-1 mb-1 text-[0.6875rem] leading-4 text-muted-foreground">
                   {t('contextUsage.compacted.description')}
                 </p>
               ) : null}
@@ -294,7 +296,7 @@ export const WorkStatusPrimaryGroup: React.FC<Props> = ({ sessionId, directory, 
                   than reporting a reading of its own, so it carries no icon
                   and no label column. */}
               {showCostBreakdown ? (
-                <p className="mx-1 mb-1 truncate text-[11px] leading-4 text-muted-foreground tabular-nums">
+                <p className="mx-1 mb-1 truncate text-[0.6875rem] leading-4 text-muted-foreground tabular-nums">
                   {t('chat.workStatus.cost.breakdown', {
                     session: formatCost(ownCost),
                     subagents: formatCost(subagentCost),
@@ -394,25 +396,8 @@ export const WorkStatusPrimaryGroup: React.FC<Props> = ({ sessionId, directory, 
                   ariaLabel={t(changeRequestCopy('chat.workStatus.action.openPr', prTerm))}
                   label={t('chat.workStatus.pr.checks')}
                   muted
-                  value={(
-                    <>
-                      {prSummary.checks.failure > 0 ? (
-                        <WorkStatusValue tone="error">
-                          {t('chat.workStatus.pr.checksFailed', { count: prSummary.checks.failure })}
-                        </WorkStatusValue>
-                      ) : null}
-                      {prSummary.checks.pending > 0 ? (
-                        <WorkStatusValue tone="warning">
-                          {t('chat.workStatus.pr.checksPending', { count: prSummary.checks.pending })}
-                        </WorkStatusValue>
-                      ) : null}
-                      {prSummary.checks.failure === 0 && prSummary.checks.pending === 0 ? (
-                        <WorkStatusValue tone="success">
-                          {t('chat.workStatus.pr.checksPassed', { count: prSummary.checks.success })}
-                        </WorkStatusValue>
-                      ) : null}
-                    </>
-                  )}
+                  tooltip={prChecksTooltip(prSummary.checks, t)}
+                  value={<PrChecksValue checks={prSummary.checks} />}
                 />
               ) : null}
             </>

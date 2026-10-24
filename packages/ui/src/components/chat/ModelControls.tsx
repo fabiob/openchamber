@@ -2951,7 +2951,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
             return null;
         }
 
-        const displayVariant = currentVariant ?? t('chat.modelControls.default');
+        const displayVariant = currentVariant ? formatEffortLabel(currentVariant) : t('chat.modelControls.default');
         const isDefault = !currentVariant;
         const colorClass = isDefault ? 'text-muted-foreground' : 'text-[color:var(--status-info)]';
         // An effort nobody picked in this composer is this model's configured
@@ -3027,7 +3027,7 @@ export const ModelControls: React.FC<ModelControlsProps> = ({
                         {displayVariants.length > 0 && <DropdownMenuSeparator />}
                         {displayVariants.map((variant) => {
                             const selected = currentVariant === variant;
-                            const label = variant.charAt(0).toUpperCase() + variant.slice(1);
+                            const label = formatEffortLabel(variant);
                             return (
                                 <DropdownMenuItem
                                     key={variant}

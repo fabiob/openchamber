@@ -1846,7 +1846,7 @@ export const TunnelSettings: React.FC = () => {
                 className="flex flex-wrap items-center gap-x-2 gap-y-1 oc-tile rounded-md px-3 py-2"
               >
                 <Icon name="checkbox-blank-circle-fill" className={cn('size-2.5 shrink-0', statusDotClass)} />
-                <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', modeBadgeClass)}>
+                <span className={cn('rounded-full px-2 py-0.5 text-[0.625rem] font-medium', modeBadgeClass)}>
                   {modeLabel}
                 </span>
                 <span className="typography-meta text-muted-foreground">

@@ -15,6 +15,8 @@ type TitleTurn = {
 // Adapted from OpenCode's agent/prompt/title.txt for recent completed turns.
 // A session usually ends on a housekeeping request ("commit and push"), so the
 // prompt names the work itself and treats such requests as pointers back to it.
+// The first title comes from OpenCode's title agent with the same style
+// (packages/web/server/lib/opencode/session-title-plugin.js); change both together.
 const TITLE_SYSTEM_PROMPT = [
   'You are a title generator. Output ONLY a thread title. Nothing else.',
   'Generate a brief title that helps the user find this coding session later in a list of sessions.',

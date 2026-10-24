@@ -49,7 +49,7 @@ export const GeneratedJsonResultCard: React.FC<{ result: GeneratedResult }> = ({
   return (
     <div data-component="generated-json-result" className="my-4 group oc-tile overflow-hidden rounded-2xl">
       <div className="flex items-center justify-between border-b border-border/70 px-3 py-1.5">
-        <span className="font-mono text-[13px] text-muted-foreground">
+        <span className="font-mono text-[0.8125rem] text-muted-foreground">
           {result.kind === 'commit'
             ? t('chat.generatedResult.commit.title')
             : t(changeRequestCopy('chat.generatedResult.pullRequest.title', changeRequestTerm))}

@@ -789,6 +789,10 @@
       "scope": "device",
       "local": true
     },
+    "sidebarFoldedForExpandedZone": {
+      "scope": "device",
+      "local": true
+    },
     "sidebarWidth": {
       "scope": "device",
       "local": true

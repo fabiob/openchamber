@@ -820,11 +820,11 @@ const TextSelectionMenuImpl: React.FC<TextSelectionMenuProps> = ({ containerRef,
           bottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))',
         }}
       >
-        {/* The first row sizes its tiles by their labels so three fit. Only
-            Comment shrinks, hyphenating a long word instead of clipping it;
-            the short Quote and Read labels stay whole. */}
+        {/* Without Read, both rows share equal-width columns. With Read, the
+            first row sizes tiles by their labels so three fit. Only Comment
+            shrinks, hyphenating a long word instead of clipping it. */}
         <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
+          <div className={cn('gap-2', canReadAloud ? 'flex' : 'grid grid-cols-2')}>
             <button
               onClick={handleOpenMobileComment}
               className={cn(

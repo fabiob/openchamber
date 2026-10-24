@@ -16,6 +16,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -29,6 +30,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict: Record<I18nKey, string> = {
   "opencodeCompatibility.bundled": "OpenCode viene incluido en OpenChamber. Actualiza OpenChamber para obtener OpenCode v2.",
@@ -165,6 +167,7 @@ export const dict: Record<I18nKey, string> = {
   ...usageStatsI18n.es,
   ...webSearchI18n.es,
   ...sessionWarmingI18n.es,
+  ...heapSnapshotI18n.es,
   ...overviewI18n.es,
   ...isolatedSpacesI18n.es,
   ...sourceBoardI18n.es,
@@ -178,6 +181,7 @@ export const dict: Record<I18nKey, string> = {
   ...pluginsGridI18n.es,
   ...integrationsCatalogI18n['es'],
   ...diffFindI18n['es'],
+  ...guestStatusViewI18n['es'],
   'terminalView.actions.attachSelection': 'Adjuntar salida seleccionada',
   'terminalView.actions.copySelection': 'Copiar salida seleccionada',
   'terminalView.toast.selectionCopied': 'Salida copiada',
@@ -2645,6 +2649,7 @@ export const dict: Record<I18nKey, string> = {
   "chat.statusRow.background.action": "Mover a segundo plano: el agente deja de esperar y continúa",
   "chat.statusRow.background.failed": "No se pudo mover el trabajo a segundo plano",
   "chat.toolPart.background.label": "en segundo plano",
+  "chat.toolPart.openImageExpanded": "Abrir",
   "chat.toolPart.subagent.stop": "Detener subagente",
   "chat.toolPart.subagent.stopFailed": "No se pudo detener el subagente",
   "chat.toolPart.background.stop": "Detener comando",
@@ -3402,6 +3407,7 @@ export const dict: Record<I18nKey, string> = {
   "mainLayout.mobile.closeDrawerAria": "Cerrar drawer",
   "sortableTabsStrip.aria.tabs": "Pestañas",
   "openChamberLogo.aria.logo": "Logo de OpenChamber",
+  "markdownRenderer.code.proposal": "Propuesta",
   "markdownRenderer.code.actions.copyTitle": "Copiar código",
   "markdownRenderer.code.actions.copiedTitle": "Copiado",
   "markdownRenderer.table.actions.copyTitle": "Copiar tabla",

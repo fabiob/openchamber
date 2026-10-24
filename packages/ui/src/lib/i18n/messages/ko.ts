@@ -16,6 +16,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -29,6 +30,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict: Record<I18nKey, string> = {
   "opencodeCompatibility.bundled": "OpenCode는 OpenChamber에 포함되어 있습니다. OpenCode v2를 사용하려면 OpenChamber를 업데이트하세요.",
@@ -155,6 +157,7 @@ export const dict: Record<I18nKey, string> = {
   ...usageStatsI18n.ko,
   ...webSearchI18n.ko,
   ...sessionWarmingI18n.ko,
+  ...heapSnapshotI18n.ko,
   ...overviewI18n.ko,
   ...isolatedSpacesI18n.ko,
   ...sourceBoardI18n.ko,
@@ -168,6 +171,7 @@ export const dict: Record<I18nKey, string> = {
   ...pluginsGridI18n.ko,
   ...integrationsCatalogI18n['ko'],
   ...diffFindI18n['ko'],
+  ...guestStatusViewI18n['ko'],
   'terminalView.actions.attachSelection': '선택한 출력 첨부',
   'terminalView.actions.copySelection': '선택한 출력 복사',
   'terminalView.toast.selectionCopied': '출력을 복사했습니다',
@@ -2714,6 +2718,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.showFormattedJson': '형식화된 JSON 표시',
   'chat.toolPart.showNavigableJson': '탐색 가능한 JSON 표시',
   'chat.toolPart.openFile': '파일 열기',
+  'chat.toolPart.openImageExpanded': '열기',
   'chat.toolPart.openFileAtFirstChange': '첫 번째 변경 위치에서 파일 열기',
   'chat.toolPart.openFileDiff': '파일 diff 열기',
   'chat.toolPart.copyOutput': '출력 복사',
@@ -3445,6 +3450,7 @@ export const dict: Record<I18nKey, string> = {
   'mainLayout.mobile.closeDrawerAria': '드로어 닫기',
   'sortableTabsStrip.aria.tabs': '탭',
   'openChamberLogo.aria.logo': 'OpenChamber 로고',
+  'markdownRenderer.code.proposal': '제안',
   'markdownRenderer.code.actions.copyTitle': '코드 복사',
   'markdownRenderer.code.actions.copiedTitle': '복사됨',
   'markdownRenderer.table.actions.copyTitle': '표 복사',

@@ -97,7 +97,7 @@ const darkLift = (foreground: string) => `inset 0 1px 0 0 color-mix(in srgb,${fo
 export function htmlRenderTheme(theme: Theme, metrics: HtmlRenderMetrics): HtmlRenderTheme {
     const { surface, interactive, primary, status, syntax } = theme.colors;
     const dark = theme.metadata.variant === 'dark';
-    // The app's main button (components/ui/button.tsx, TINT_PRIMARY): a pale
+    // The app's main button (components/ui/button-variants.ts, TINT_PRIMARY): a pale
     // accent fill and border with readable accent text. A dark theme mixes the
     // accent into transparent so the tone sits on the surface behind it.
     const tint = (amount: number, base: string) => `color-mix(in srgb,${primary.base} ${amount}%,${base})`;

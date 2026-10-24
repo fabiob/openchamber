@@ -110,6 +110,7 @@ import { ChatSearchBar } from './search/ChatSearchBar';
 import { WorkStatusPanel } from './work-status/WorkStatusPanel';
 import { useWorkStatusVisibility } from './work-status/useWorkStatusVisibility';
 import { useShownSessionSelection } from './useShownSessionSelection';
+import { usePinnedSessionDirectory } from './usePinnedSessionDirectory';
 import { useRightSlotStore } from '@/components/layout/rightSlot';
 import { buildPromptPreviewsByTurnId } from './lib/promptPreviews';
 import { resolveChatPromptReadOnly } from './chatPromptReadOnly';
@@ -837,7 +838,8 @@ export const ChatContainer: React.FC<ChatContainerProps> = ({
     const globalSessionId = useSessionUIStore((s) => (pinned ? null : s.currentSessionId));
     const globalSessionDirectory = useSessionUIStore((s) => (pinned ? null : s.currentSessionDirectory));
     const liveSessionId = pinned ? pinnedSelection?.sessionId ?? null : globalSessionId;
-    const liveSessionDirectory = pinned ? pinnedSelection?.directory ?? null : globalSessionDirectory;
+    const pinnedSessionDirectory = usePinnedSessionDirectory(pinned ? pinnedSelection : null);
+    const liveSessionDirectory = pinned ? pinnedSessionDirectory : globalSessionDirectory;
     const materializedDraftSessionId = useSessionUIStore((s) => (pinned ? null : s.materializedDraftSessionId));
     const liveSelection = React.useMemo(
         () => ({ sessionId: liveSessionId, directory: liveSessionDirectory }),

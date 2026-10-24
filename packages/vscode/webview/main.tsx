@@ -575,13 +575,22 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     // extension host's activity watcher. Its phases collapse busy and retry
     // into `busy` and it settles sessions itself through `cooldown`, so every
     // busy entry is current as of now.
-    type ActivitySnapshot = Record<string, { type: 'idle' | 'busy' | 'cooldown' }>;
+    type ActivitySnapshot = Record<string, { type: 'idle' | 'busy' | 'cooldown'; startedAgoMs?: number }>;
     const activity = await sendBridgeMessage<ActivitySnapshot>('api:session-activity:get')
       .catch((): ActivitySnapshot => ({}));
     const now = Date.now();
-    const sessions: Record<string, { status: 'busy'; lastUpdateAt: number }> = {};
+    type StatusEntry = { status: 'busy'; lastUpdateAt: number; turnStartedAt?: number };
+    const sessions: Record<string, StatusEntry> = {};
     for (const [sessionId, entry] of Object.entries(activity || {})) {
-      if (entry?.type === 'busy') sessions[sessionId] = { status: 'busy', lastUpdateAt: now };
+      if (entry?.type !== 'busy') continue;
+      const status: StatusEntry = { status: 'busy', lastUpdateAt: now };
+      // The extension host reports the age, not a timestamp, because its clock
+      // and this webview's may differ on a remote window. Anchoring the age
+      // here keeps the count on this device's clock.
+      if (entry.startedAgoMs !== undefined) {
+        status.turnStartedAt = now - Math.max(0, entry.startedAgoMs);
+      }
+      sessions[sessionId] = status;
     }
     // The extension host keeps no pending-request map; directory stores and
     // its own auto-accept path cover requests in VS Code.
@@ -912,11 +921,23 @@ const handleLocalApiRequest = async (input: RequestInfo | URL, url: URL, init: R
     return 200;
   };
 
-  // Skills catalog: /api/config/skills/catalog
+  // Skills catalog: /api/config/skills/catalog lists the sources,
+  // /api/config/skills/catalog/source scans one of them.
   if (pathname === '/api/config/skills/catalog') {
+    try {
+      const data = await sendBridgeMessage('api:config/skills:catalog');
+      return new Response(JSON.stringify(data), { status: skillsCatalogStatusFromPayload(data), headers: { 'Content-Type': 'application/json' } });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ ok: false, error: { kind: 'unknown', message } }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+  }
+
+  if (pathname === '/api/config/skills/catalog/source') {
+    const sourceId = url.searchParams.get('sourceId') ?? '';
     const refresh = url.searchParams.get('refresh') === 'true';
     try {
-      const data = await sendBridgeMessage('api:config/skills:catalog', { refresh });
+      const data = await sendBridgeMessage('api:config/skills:catalog/source', { sourceId, refresh });
       return new Response(JSON.stringify(data), { status: skillsCatalogStatusFromPayload(data), headers: { 'Content-Type': 'application/json' } });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

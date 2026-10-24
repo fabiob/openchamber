@@ -39,7 +39,6 @@ import { GuestIcon } from './GuestRailIcon';
 import { useGuestsStore } from '@/lib/guests/store';
 import { FALLBACK_GUEST_ICON } from '@/lib/guests/icon';
 import { isPluginContextPanelMode, pluginIdFromMode } from '@/lib/surfaces/modes';
-import { CONTEXT_SURFACE_WIDTHS, getContextSurfaceDefaultWidth } from '@/lib/surfaces/registry';
 import { beginLayoutAnimation, cancelWhenLayoutSettled, LAYOUT_ANIMATION_EASING, runWhenLayoutSettled } from '@/lib/layoutAnimation';
 import { useLayoutAnimationMs } from '@/hooks/useLayoutAnimationMs';
 import { WORK_STATUS_COLUMN_WIDTH } from '@/components/chat/work-status/useWorkStatusVisibility';
@@ -47,21 +46,20 @@ import { setWorkStatusHost, useRightSlotStore } from './rightSlot';
 import { changeRequestCopy } from '@/lib/source-control/changeRequestCopy';
 import { useChangeRequestTerm } from '@/lib/source-control/providers/registry';
 import { ContextPanelHeaderSlotProvider } from './contextPanelHeaderSlot';
-import { CLOSED_ZONE_VIEW, getZoneView, isZoneShown, resolveZoneActiveTab, type ContextZone } from '@/lib/workspace/zones';
+import { CLOSED_ZONE_VIEW, CONTEXT_ZONE_DEFAULT_WIDTH, getZoneView, isZoneShown, resolveZoneActiveTab, type ContextZone } from '@/lib/workspace/zones';
 import { closeZoneOnEscape } from './zoneEscape';
 import { ZoneMoveMenuItems } from './ZoneMoveMenuItems';
 import { beginZoneDrag, cancelZoneDrag, finishZoneDrag, startZoneDragGesture, updateZoneDrag } from './zoneDrag';
 import { setZoneBody, setZoneHeaderSlot } from './zoneHosts';
-import { useOpenUntilSettled, useOpenWhenSettled } from './useOpenUntilSettled';
+import { useOpenWhenSettled } from './useOpenUntilSettled';
 import { isZoneExposed } from './zoneInteractiveContext';
 import { DockedPanelSurfaceContext } from '@/hooks/usePageColors';
 
 const CONTEXT_PANEL_MIN_WIDTH = 320;
-const CONTEXT_PANEL_DEFAULT_WIDTH = CONTEXT_SURFACE_WIDTHS.regular;
 // The panel has no absolute pixel ceiling: on large monitors the user may
 // want it nearly full-width (side-by-side diffs with the chat open). The
 // only limit during a drag is leaving the chat column this much width.
-const CONTEXT_CHAT_MIN_WIDTH = 400;
+const CONTEXT_CHAT_MIN_WIDTH = 320;
 const RESIZE_FOLLOW_INTERVAL_MS = 100;
 const CONTEXT_TAB_LABEL_MAX_CHARS = 24;
 type TranslateFn = ReturnType<typeof useI18n>['t'];
@@ -87,7 +85,7 @@ const normalizeDirectoryKey = (value: string): string => {
 
 const clampWidth = (width: number, maxWidth: number): number => {
   if (!Number.isFinite(width)) {
-    return CONTEXT_PANEL_DEFAULT_WIDTH;
+    return CONTEXT_ZONE_DEFAULT_WIDTH;
   }
 
   return Math.min(maxWidth, Math.max(CONTEXT_PANEL_MIN_WIDTH, Math.round(width)));
@@ -359,7 +357,6 @@ const ZONE_GEOMETRY = {
     axis: 'x',
     gutter: 'mb-2 ms-2 me-1.5',
     gutterSize: '0.875rem',
-    expanded: 'absolute inset-y-0 inset-e-0 z-20 min-w-0',
     handle: 'absolute bottom-2 inset-s-1 top-0 z-50 w-2 cursor-col-resize',
     sizeVariable: '--oc-context-panel-width',
   },
@@ -367,7 +364,6 @@ const ZONE_GEOMETRY = {
     axis: 'x',
     gutter: 'mb-2 ms-1.5 me-2',
     gutterSize: '0.875rem',
-    expanded: 'absolute inset-y-0 inset-s-0 z-20 min-w-0',
     handle: 'absolute bottom-2 inset-e-1 top-0 z-50 w-2 cursor-col-resize',
     sizeVariable: '--oc-context-panel-width',
   },
@@ -375,7 +371,6 @@ const ZONE_GEOMETRY = {
     axis: 'y',
     gutter: 'mb-2 mt-2',
     gutterSize: '1rem',
-    expanded: 'absolute inset-x-0 bottom-0 z-20 min-h-0',
     handle: 'absolute inset-x-0 top-1 z-50 h-2 cursor-row-resize',
     sizeVariable: '--oc-context-panel-height',
   },
@@ -420,8 +415,7 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
   const closeContextPanelTab = useUIStore((state) => state.closeContextPanelTab);
   const pinContextPanelTab = useUIStore((state) => state.pinContextPanelTab);
   const toggleContextPanelExpanded = useUIStore((state) => state.toggleContextPanelExpanded);
-  const setContextPanelWidth = useUIStore((state) => state.setContextPanelWidth);
-  const setContextPanelHeight = useUIStore((state) => state.setContextPanelHeight);
+  const setContextZoneSize = useUIStore((state) => state.setContextZoneSize);
   const setActiveContextPanelTab = useUIStore((state) => state.setActiveContextPanelTab);
   const reorderContextPanelTabs = useUIStore((state) => state.reorderContextPanelTabs);
   const contextEditorTreeVisible = useUIStore((state) => state.contextEditorTreeVisible);
@@ -459,29 +453,32 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
   // The editor column is shown for an open file unless the user hid it; the
   // tree never hides alongside it, so a hidden tree forces the editor back.
   const showsEditor = hasOpenEditorFile && (contextEditorVisible || !contextEditorTreeVisible);
-  const activeModeForWidth = activeTab?.mode ?? null;
   // A side zone without an editor shrinks to the tree; the bottom zone keeps
   // its full width either way.
-  const isTreeOnly = !isVertical && activeModeForWidth === 'file' && !showsEditor;
+  const isTreeOnly = !isVertical && activeTab?.mode === 'file' && !showsEditor;
   const isExpanded = Boolean(isOpen && zoneView.expanded && !isTreeOnly);
-  // A fixed size in px: the one the user resized this surface to, else the
-  // surface's default. It does not follow the chat area, so a sidebar toggle
-  // or a window resize leaves it alone unless the chat would get too small.
-  const manualSize = activeModeForWidth
-    ? (isVertical ? panelState?.heightByMode?.[activeModeForWidth] : panelState?.widthByMode?.[activeModeForWidth])
-    : undefined;
+  // A fixed size in px: the one the user resized this zone to, else the
+  // default, whatever surface it shows, so switching surfaces leaves its edge
+  // in place. It does not follow the chat area, so a sidebar toggle or a
+  // window resize leaves it alone unless the chat would get too small.
+  const manualSize = panelState?.sizeByZone?.[zone];
   const desiredSize = isTreeOnly
     ? contextEditorTreeWidth
     : isVertical
       ? clampHeight(manualSize ?? CONTEXT_PANEL_DEFAULT_HEIGHT, Number.POSITIVE_INFINITY)
-      : clampWidth(manualSize ?? (activeModeForWidth ? getContextSurfaceDefaultWidth(activeModeForWidth) : CONTEXT_PANEL_DEFAULT_WIDTH), Number.POSITIVE_INFINITY);
+      : clampWidth(manualSize ?? CONTEXT_ZONE_DEFAULT_WIDTH, Number.POSITIVE_INFINITY);
   const clampSize = React.useCallback((next: number, available: number | null) => (
     isVertical ? clampHeight(next, maxPanelHeight(available)) : clampWidth(next, maxPanelWidth(available))
   ), [isVertical]);
   const chatMinimum = isVertical ? CONTEXT_CHAT_MIN_HEIGHT : CONTEXT_CHAT_MIN_WIDTH;
+  // Expanded, the zone takes everything but a chat column about as wide as
+  // the session sidebar it folds away (ZoneFitArbiter), never under the
+  // minimum, so the chat stays on screen beside it.
+  const sidebarWidth = useUIStore((state) => (isVertical ? 0 : state.sidebarWidth));
+  const expandedChatSize = isVertical ? CONTEXT_CHAT_MIN_HEIGHT : Math.max(CONTEXT_CHAT_MIN_WIDTH, sidebarWidth);
 
   // The area the zone shares with the chat, as state only while it decides
-  // something: the zone is expanded over it, or the ceiling binds (the zone
+  // something: the zone is expanded across it, or the ceiling binds (the zone
   // would leave the chat less than its minimum). Otherwise it is null, so the
   // many size changes that cannot matter (every frame of a sidebar animation,
   // most window resizes) do not re-render the zone and everything in it.
@@ -503,7 +500,7 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
     const editorShown = panel.tabs.some((entry) => entry.mode === 'file' && entry.targetPath)
       && (state.contextEditorVisible || !state.contextEditorTreeVisible);
     if (tab.mode === 'file' && !editorShown) return state.contextEditorTreeWidth;
-    return panel.widthByMode[tab.mode] ?? getContextSurfaceDefaultWidth(tab.mode);
+    return panel.sizeByZone[otherSide] ?? CONTEXT_ZONE_DEFAULT_WIDTH;
   });
   // The closed right zone still holds the work-status card's column.
   const otherSideReserved = otherSide === 'right' && workStatusReserved && !chatCovered && otherSideWidth === 0
@@ -513,18 +510,31 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
   const measuredAreaSizeRef = React.useRef<number | null>(null);
   const otherSideRef = React.useRef(otherSideReserved);
   otherSideRef.current = otherSideReserved;
+  const isOpenRef = React.useRef(isOpen);
+  isOpenRef.current = isOpen;
   const areaDecidesRef = React.useRef<(measured: number) => boolean>(() => false);
   areaDecidesRef.current = (measured) => isExpanded || (!isTreeOnly && measured - otherSideRef.current - chatMinimum < desiredSize);
   const applyAreaSize = React.useCallback(() => {
-    const measured = measuredAreaSizeRef.current;
+    let measured = measuredAreaSizeRef.current;
+    // The session sidebar beside the row may have just been told to fold or
+    // unfold (expanding folds it) and still be at its old width: the row is
+    // taken as it will be once the sidebar arrives at the width it was set
+    // to, so the zone moves once, together with the sidebar, instead of again
+    // after it. Settled, the two widths are equal and this adds nothing. A
+    // closed zone shows nothing that could move, so it forces no layout read.
+    if (measured !== null && !isVertical && isOpenRef.current) {
+      const sidebar = document.querySelector<HTMLElement>('[data-left-sidebar]');
+      if (sidebar) measured += Math.round(sidebar.getBoundingClientRect().width - (Number.parseFloat(sidebar.style.width) || 0));
+    }
     setMeasuredArea(measured !== null && areaDecidesRef.current(measured) ? measured : null);
-  }, []);
+  }, [isVertical]);
   // What the zone shares with the chat: the row less the other side.
   const areaSize = measuredArea !== null ? measuredArea - otherSideReserved : null;
-  // Expanded, the left zone covers the whole row; the right one covers the
-  // chat area beside the left zone, as before zones.
-  const expandedArea = zone === 'left' ? measuredArea : areaSize;
-  const size = isTreeOnly ? desiredSize : clampSize(desiredSize, areaSize);
+  const size = isTreeOnly
+    ? desiredSize
+    : isExpanded && areaSize !== null
+      ? (isVertical ? Math.max(CONTEXT_PANEL_MIN_HEIGHT, areaSize - expandedChatSize) : Math.max(CONTEXT_PANEL_MIN_WIDTH, areaSize - expandedChatSize))
+      : clampSize(desiredSize, areaSize);
   // Titles are for this zone's chat tab strip only; a zone that is closed or
   // shows another surface subscribes to none.
   const showsChatTabs = isOpen && activeTab?.mode === 'chat';
@@ -573,12 +583,17 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
     };
   }, [applyAreaSize, isVertical]);
 
-  // Expanding, a surface wanting another size, or the other side opening or
-  // closing may make the area matter. Applied in this commit, not after the
-  // animation: these change what the zone animates to.
+  // Opening, expanding, a surface wanting another size, the other side
+  // opening or closing, or the session sidebar folding or unfolding beside
+  // the row may make the area matter. Applied in this commit, not after the animation:
+  // these change what the zone animates to.
+  // Only while the area decides the size: otherwise a sidebar toggle neither
+  // re-renders the zone nor reads layout, and the row's observer covers it.
+  const sidebarMovesZone = !isVertical && isOpen && (isExpanded || measuredArea !== null);
+  const sidebarOpen = useUIStore((state) => sidebarMovesZone && state.isSidebarOpen);
   React.useLayoutEffect(() => {
     applyAreaSize();
-  }, [applyAreaSize, desiredSize, isExpanded, otherSideReserved]);
+  }, [applyAreaSize, desiredSize, isExpanded, isOpen, otherSideReserved, sidebarOpen]);
 
   React.useEffect(() => {
     if (!isOpen || wasOpenRef.current) {
@@ -662,13 +677,12 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
     document.documentElement.style.cursor = '';
     if (isTreeOnly) {
       setContextEditorTreeWidth(finalSize);
-    } else if (directoryKey && activeModeForWidth) {
-      if (isVertical) setContextPanelHeight(directoryKey, activeModeForWidth, finalSize);
-      else setContextPanelWidth(directoryKey, activeModeForWidth, finalSize);
+    } else if (directoryKey) {
+      setContextZoneSize(directoryKey, zone, finalSize);
     }
     setIsResizing(false);
     activeResizePointerIDRef.current = null;
-  }, [activeModeForWidth, clampSizeForDrag, directoryKey, isTreeOnly, isVertical, setContextEditorTreeWidth, setContextPanelHeight, setContextPanelWidth, size]);
+  }, [clampSizeForDrag, directoryKey, isTreeOnly, setContextEditorTreeWidth, setContextZoneSize, size, zone]);
 
   // Window-level drag listeners: tracking the pointer via the thin handle and
   // pointer capture is unreliable (capture can fail over iframes and a missed
@@ -1038,14 +1052,9 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
   // screen; open, it is the panel's width. Every value stays interpolable
   // across open/close (no instant min/max jumps).
   const workStatusColumn = zone === 'right' && workStatusReserved && !chatCovered;
-  const expandedSize = expandedArea !== null ? `${expandedArea}px` : '100%';
   const slotSize = !isOpen
     ? (workStatusColumn ? `${WORK_STATUS_COLUMN_WIDTH}px` : '0px')
-    : isExpanded
-      // px, not '100%': px↔% size changes do not interpolate, which
-      // would make the expand/collapse snap instead of animating.
-      ? expandedSize
-      : `min(var(${geometry.sizeVariable}), 100%)`;
+    : `min(var(${geometry.sizeVariable}), 100%)`;
 
   // The bottom card spans the chat column. Next to a card on either side it
   // gives up its own gutter on that side, so neighbours stand one gutter apart.
@@ -1087,19 +1096,8 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
   // common on macOS); removing it costs a few ms. After the layout effect
   // above, which begins the animation.
   const contentHidden = !isZoneExposed(isOpen, useOpenWhenSettled(isOpen), activeTab?.mode);
-  // Expanded, and through the collapse animation, the zone floats over the
-  // chat while a spacer holds its docked size in the layout, so the chat
-  // never changes size under it. Back in the layout at once on collapse, the
-  // zone started at the full area and squeezed the chat to nothing: the
-  // transcript measured its rows at that width, thousands of pixels tall, and
-  // stayed blank until the session was reopened.
-  const overlaid = useOpenUntilSettled(isExpanded);
-  const dockedSize = !isOpen
-    ? (workStatusColumn ? `${WORK_STATUS_COLUMN_WIDTH}px` : '0px')
-    : `${size}px`;
-
   const panelStyle: React.CSSProperties = {
-    [geometry.sizeVariable]: isOpen && isExpanded ? expandedSize : `${size}px`,
+    [geometry.sizeVariable]: `${size}px`,
     ...(isVertical
       ? { height: slotSize, maxHeight: '100%' }
       : { width: slotSize, maxWidth: '100%' }),
@@ -1107,22 +1105,10 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
     transitionTimingFunction: LAYOUT_ANIMATION_EASING,
   };
 
-  // Less the gutters the aside reserves for the card. px in the expanded
-  // state too: px↔% size changes cannot interpolate, so the header controls
-  // would snap instead of riding the animation.
-  const cardSize = isExpanded
-    ? (expandedArea !== null ? `calc(${expandedArea}px - ${geometry.gutterSize})` : '100%')
-    : `calc(var(${geometry.sizeVariable}) - ${geometry.gutterSize})`;
+  // Less the gutters the aside reserves for the card.
+  const cardSize = `calc(var(${geometry.sizeVariable}) - ${geometry.gutterSize})`;
 
   return (
-    <>
-    {overlaid ? (
-      <div
-        aria-hidden="true"
-        className="flex-shrink-0"
-        style={isVertical ? { height: dockedSize, maxHeight: '100%' } : { width: dockedSize, maxWidth: '100%' }}
-      />
-    ) : null}
     <aside
       ref={panelRef}
       data-context-panel="true"
@@ -1145,12 +1131,9 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
         // the card only, and the session sidebar shown over the chat on hover
         // (z-25) covers the zone handle and all.
         'isolate',
-        // Anchored to its window edge while expanded: `inset-0` would teleport
-        // the far edge instantly (position does not transition), so only the
-        // size animates and the zone grows toward the chat from where it docks.
-        overlaid
-          ? geometry.expanded
-          : isVertical ? 'relative w-full flex-shrink-0' : 'relative h-full flex-shrink-0',
+        // Expanded too: the zone stays in the layout at its largest size, so
+        // the chat keeps a column beside it rather than being covered.
+        isVertical ? 'relative w-full flex-shrink-0' : 'relative h-full flex-shrink-0',
         isVertical ? 'transition-[height]' : 'transition-[width]',
         'motion-reduce:transition-none',
       )}
@@ -1220,6 +1203,5 @@ export const ContextPanel: React.FC<{ zone?: ContextZone }> = ({ zone = 'right' 
       </DockedPanelSurfaceContext.Provider>
       </div>
     </aside>
-    </>
   );
 };

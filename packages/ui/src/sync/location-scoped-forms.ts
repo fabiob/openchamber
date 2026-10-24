@@ -32,7 +32,8 @@ const hasRunningTurn = (state: DirectoryFormState): boolean => (
  * both `form.created` and `form.cancelled`, without a location: the MCP
  * callback runs outside the location's services. Routed like any other
  * directory-less event it is dropped, which leaves a cancelled form in the
- * store for good.
+ * store for good. OpenCode 2.1.4 publishes them with their location, so this
+ * routing goes once `MINIMUM_OPENCODE_VERSION` reaches 2.1.4.
  *
  * A settled form goes to every store that holds it: form ids are unique, so
  * removing it by id is right wherever it is. A created form cannot be filed

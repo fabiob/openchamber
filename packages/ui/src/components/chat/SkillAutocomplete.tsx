@@ -141,14 +141,14 @@ export const SkillAutocomplete = React.forwardRef<SkillAutocompleteHandle, Skill
           <div className="flex items-center gap-2">
             <span className="font-semibold truncate">{skill.name}</span>
             <span className={cn(
-              "text-[10px] leading-none uppercase font-bold tracking-tight px-1.5 py-1 rounded border flex-shrink-0 transition-colors",
+              "text-[0.625rem] leading-none uppercase font-bold tracking-tight px-1.5 py-1 rounded border flex-shrink-0 transition-colors",
               isProject 
                 ? "bg-[var(--status-info-background)] text-[var(--status-info)] border-[var(--status-info-border)]"
                 : "bg-[var(--status-success-background)] text-[var(--status-success)] border-[var(--status-success-border)]"
             )}>
               {skill.scope}
             </span>
-            <span className="text-[10px] leading-none uppercase font-bold tracking-tight px-1.5 py-1 rounded border flex-shrink-0 bg-[var(--surface-muted)] text-muted-foreground border-[var(--interactive-border)]/60">
+            <span className="text-[0.625rem] leading-none uppercase font-bold tracking-tight px-1.5 py-1 rounded border flex-shrink-0 bg-[var(--surface-muted)] text-muted-foreground border-[var(--interactive-border)]/60">
               {source}
             </span>
           </div>

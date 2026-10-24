@@ -42,7 +42,8 @@ Diagnostic logging for the timeline export (`proxy.js` error lines, the lifecycl
 - `packages/web/server/lib/opencode/startup-performance.js`: opt-in startup phase diagnostics with fixed labels and numeric metadata allowlists.
 - `packages/web/server/lib/agent-tool/runtime.js`: managed OpenCode custom-tool materialization, environment injection, same-machine authentication (loopback, or the bound address for a concrete bind), and fixed CLI action dispatch.
 - `packages/web/server/lib/opencode/managed-plugin-config.js`: the `OPENCODE_CONFIG_CONTENT` merge used only on the fallback path, when the user's own environment owns `OPENCODE_CONFIG`.
-- `packages/web/server/lib/opencode/managed-config-file.js`: the managed OpenCode config layer — materializes the enabled OpenChamber plugins (agent tools, system prompt optimizer, and the limit failover reporter from `../limit-failover/` while a fallback model or an account switch is set) and publishes them in a file OpenCode watches.
+- `packages/web/server/lib/opencode/managed-config-file.js`: the managed OpenCode config layer — materializes the enabled OpenChamber plugins (agent tools, the limit failover reporter from `../limit-failover/` while a fallback model or an account switch is set, and the session title prompt, always) and publishes them in a file OpenCode watches.
+- `packages/web/server/lib/opencode/session-title-plugin.js`: the plugin that gives OpenCode's hidden `title` agent OpenChamber's title style. See "Session title prompt" below.
 - `packages/web/server/lib/opencode/instance-dir.js`: this server's own folder under `<data-dir>/run/instances/<pid>/` for the files its managed OpenCode reads, and removal of folders left by servers that are gone.
 
 ### Managed plugins on OpenCode 2.x
@@ -1104,6 +1105,31 @@ under a running child.
   OpenChamber does not take it over. It merges its plugin directories into
   `OPENCODE_CONFIG_CONTENT` instead, and those installs keep the old behavior —
   a managed-tool toggle needs an OpenCode restart to take effect.
+
+### Session title prompt
+
+OpenCode names a new session with its hidden `title` agent. Its built-in prompt
+keeps file names and issue numbers and tends to restate the request, so the
+first title often reads like a summary of the prompt and gets cut off in the
+sidebar. `session-title-plugin.js` replaces that agent's `system` prompt with
+the folder-label style the UI's own regeneration uses
+(`packages/ui/src/lib/sessionTitle.ts`); the two prompts change together.
+
+- The plugin is listed on every managed launch, with no setting. External
+  OpenCode and the VS Code extension's own OpenCode get no managed plugins, so
+  they keep OpenCode's prompt.
+- An `agents.title.system` the user set, in global or project config or an
+  agent file, still wins. OpenCode activates configured plugins after its
+  built-in agents and before its config agents, so the config writes the
+  prompt after this plugin.
+
+#### Why an agent transform and not the `session.title` hook
+
+The hook runs on every title request, after config is applied, so it would
+overwrite a user's own `agents.title.system`, and telling the user's prompt
+apart from OpenCode's inside the hook means comparing prompt text. The agent
+transform takes OpenCode's own plugin order and leaves the user's choice on top
+with no check at all.
 
 The embedded server controller exposes `getManagedOpenCodePreflight()` for
 desktop bootstrap. It shares the lifecycle's current CLI validation promise,

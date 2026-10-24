@@ -9,8 +9,10 @@ import { ownedOriginInstance } from './origin-instance.js';
  * - `verify(origin, token)` answers the token's user (`{ id, login, ... }`)
  *   or throws; `classifyFailure(error) === 'invalid-token'` means the forge
  *   refused the token, which writes the account off.
- * - `probe(origin)` answers `{ supported, version?, message? }` without a
- *   token: whether the instance is one this provider can serve.
+ * - `probe(origin, token?)` answers `{ supported, version?, message? }`:
+ *   whether the instance is one this provider can serve. Capabilities call
+ *   it without a token; connect passes the token being connected, for an
+ *   instance that refuses anonymous reads.
  * - `ownerElsewhere({ origin, version })`, optional, answers another
  *   provider (`{ id, label }`) whose card the instance belongs on, or null.
  *   Connect refuses such an instance before anything is stored.
@@ -18,10 +20,10 @@ import { ownedOriginInstance } from './origin-instance.js';
  * A provider whose settings declare a `username` field signs in with HTTP
  * Basic (Gerrit: username plus HTTP password), so the token alone cannot
  * verify. For it, and only for it, connect takes a `username` and calls
- * `verify(origin, token, { username })` and `probe(origin, token, { username })`
- * (an instance may refuse anonymous reads). The typed username is stored as
- * the account's `user.login`, so every later re-verify, `loginFor(session)`
- * and Git transport use exactly what Basic auth accepted. Other providers are called exactly as before.
+ * `verify(origin, token, { username })` and `probe(origin, token, { username })`.
+ * The typed username is stored as the account's `user.login`, so every later
+ * re-verify, `loginFor(session)` and Git transport use exactly what Basic auth
+ * accepted. Other providers are called with `(origin, token)` for both.
  */
 
 const UNSUPPORTED_METHOD = Object.freeze({ available: false, reason: 'unsupported' });
@@ -154,7 +156,7 @@ export function createPatAccountAuth({ descriptor, store, events, verify, probe,
       // A Basic-auth host's stored login is the username the user typed, the
       // one Basic auth accepted, whatever name the host reports for the account.
       const user = takesUsername ? { ...(await verify(origin, token, credentials)), login: username } : await verify(origin, token);
-      const { version, supported, message } = takesUsername ? await probe(origin, token, credentials) : await probe(origin);
+      const { version, supported, message } = takesUsername ? await probe(origin, token, credentials) : await probe(origin, token);
       if (!supported) {
         throw responseError(400, {
           error: message || (version ? `${descriptor.label} ${version} is not supported` : `${descriptor.label} is not supported`),

@@ -131,8 +131,8 @@ export function createGiteaFamilyProvider({
 }) {
   const { label } = descriptor;
   const verify = (origin, token) => verifyGiteaToken({ origin, token, fetch: fetchImpl, timeoutMs, label });
-  const probe = async (origin) => {
-    const { version, supported } = await probeGiteaVersion({ origin, fetch: fetchImpl, timeoutMs, label });
+  const probe = async (origin, token = null) => {
+    const { version, supported } = await probeGiteaVersion({ origin, token, fetch: fetchImpl, timeoutMs, label });
     return supported ? { version, supported } : { version, supported, message: `${label} ${version} is older than OpenChamber supports (${edition.minimum})` };
   };
   /** An instance belongs to the edition its `/version` names, so it is connected on one card only. */

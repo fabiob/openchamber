@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { OPENCHAMBER_SDK_API_VERSION } from './api-version.ts';
-import { clampStatusSectionHeight, hasGuestPage, requestedGuestCapabilities, toPublicSourceControl, resolveAttachEntry, resolveStatusSectionEntry, resolveAttachMode, resolveIntegrationApi, toPublicIntegration, type OpenChamberContributes } from './manifest.ts';
+import { clampStatusSectionHeight, hasGuestPage, requestedGuestCapabilities, toPublicSourceControl, resolveAttachEntry, resolveStatusSectionEntry, resolveStatusSectionSource, resolveAttachMode, resolveIntegrationApi, toPublicIntegration, type OpenChamberContributes } from './manifest.ts';
 import { parseManifest, parseManifestJson } from './parse.ts';
 
 const validBlock = {
@@ -1112,6 +1112,44 @@ describe('contributes.statusSection', () => {
       { entry: 'status/index.html', title: '' }, { entry: 'status/index.html', title: 'x'.repeat(61) }]) {
       expect(parse({ panel: pageless, statusSection })).toMatchObject({ ok: false, code: 'invalid-status-section' });
     }
+  });
+
+  test('a source section is drawn by the host from the service, so it needs no frame', () => {
+    const service = { entry: 'service/main.js', runtime: 'host' };
+    const result = parse({ panel: pageless, statusSection: { source: { path: '/status' }, title: 'Resources' }, service });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.message);
+    expect(resolveStatusSectionEntry(result.manifest.contributes)).toBeNull();
+    expect(resolveStatusSectionSource(result.manifest.contributes)).toEqual({ path: '/status', interval: 2000 });
+    expect(requestedGuestCapabilities(result.manifest.contributes)).toEqual(['service']);
+  });
+
+  test('a section may carry both, so hosts without source support load the frame', () => {
+    const result = parse({
+      panel: pageless, service: { entry: 'service/main.js', runtime: 'host' },
+      statusSection: { entry: 'status/index.html', source: { path: '/status', interval: 5000 } },
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error(result.message);
+    expect(resolveStatusSectionEntry(result.manifest.contributes)).toBe('status/index.html');
+    expect(resolveStatusSectionSource(result.manifest.contributes)).toEqual({ path: '/status', interval: 5000 });
+  });
+
+  test('a source needs a service, a request path and an interval in range', () => {
+    expect(parse({ panel: pageless, statusSection: { source: { path: '/status' } } }))
+      .toMatchObject({ ok: false, code: 'invalid-status-section' });
+    const service = { entry: 'service/main.js', runtime: 'host' };
+    for (const source of [{ path: 'status' }, { path: '/../x' }, { path: 'https://x.dev/s' }, { path: '/s', interval: 500 },
+      { path: '/s', interval: 120_000 }, { path: '/s', interval: 1500.5 }, { path: '/s', every: 2000 }]) {
+      expect(parse({ panel: pageless, statusSection: { source }, service })).toMatchObject({ ok: false, code: 'invalid-status-section' });
+    }
+  });
+
+  test('without a frame, frame-only grants still need a panel or background entry', () => {
+    expect(parse({
+      panel: pageless, statusSection: { source: { path: '/status' } },
+      service: { entry: 'service/main.js', runtime: 'host' }, capabilities: ['files'],
+    })).toMatchObject({ ok: false, code: 'invalid-panel' });
   });
 
   test('clamps heights to the host range', () => {

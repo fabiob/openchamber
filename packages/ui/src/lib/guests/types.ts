@@ -36,6 +36,8 @@ export type InstalledGuest = {
   pageTitle?: string;
   /** HTML of the extension's Work Status section (`contributes.statusSection`); may exist without `entry`. */
   statusEntry?: string;
+  /** Service path the host reads and draws the section from, without a frame; wins over `statusEntry`. */
+  statusSource?: { path: string; interval: number };
   /** Section header title; the extension name when absent. */
   statusTitle?: string;
   /** Starting frame height in CSS px before the guest reports its own. */

@@ -9,6 +9,7 @@ import { pathsEqualWithNormalizedDriveLetter } from './pathUtils';
 import { resolveWorkspaceFolders } from './workspaceResolver';
 import { InlineCommentThreads, SIDEBAR_SURFACE_ID } from './InlineCommentThreads';
 import { applyConnectAttemptTimeout } from './networkDefaults';
+import { disposeOutputChannel, getOutputChannel } from './outputChannel';
 import { stopGitProcesses } from './bridge-git-process-runtime';
 import { registerGenerateCommitMessageCommand } from './scmCommitMessage';
 import { createSessionNotifier } from './sessionNotifications';
@@ -58,7 +59,7 @@ const formatDurationMs = (value: number | null | undefined) => {
 
 export async function activate(context: vscode.ExtensionContext) {
   applyConnectAttemptTimeout();
-  outputChannel = vscode.window.createOutputChannel('OpenChamber');
+  outputChannel = getOutputChannel();
 
   let moveToRightSidebarScheduled = false;
 
@@ -927,6 +928,6 @@ export async function deactivate() {
   openCodeManager = undefined;
   chatViewProvider = undefined;
   sessionEditorProvider = undefined;
-  outputChannel?.dispose();
+  disposeOutputChannel();
   outputChannel = undefined;
 }

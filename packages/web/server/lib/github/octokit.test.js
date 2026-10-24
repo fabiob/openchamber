@@ -355,6 +355,40 @@ describe('getGitHubCliCredential git transport', () => {
   });
 });
 
+describe('reused gh token', () => {
+  test('a token GitHub refuses is asked from gh again', async () => {
+    const ghConfigDir = fs.mkdtempSync(path.join(os.tmpdir(), 'oc-gh-hosts-refused-'));
+    fs.writeFileSync(path.join(ghConfigDir, 'hosts.yml'), 'github.com:\n  user: octocat\n');
+    const previousConfigDir = process.env.GH_CONFIG_DIR;
+    process.env.GH_CONFIG_DIR = ghConfigDir;
+    process.env.PATH = `${ghBin}${path.delimiter}${previousPath}`;
+    fs.rmSync(ghInvoked, { force: true });
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = async () => Response.json({ message: 'Bad credentials' }, { status: 401 });
+    const ghRuns = () => fs.readFileSync(ghInvoked, 'utf8').split('\n').filter(Boolean).length;
+    const { getGhCliToken } = await import('./gh-cli-credential.js');
+    try {
+      const token = await getGhCliToken('github.com');
+      expect(await getGhCliToken('github.com')).toBe(token);
+      expect(ghRuns()).toBe(1);
+      // A stored token's refusal leaves the gh answer alone.
+      await expect(createOctokit('stored-token', '7', 'github.com').rest.users.getAuthenticated()).rejects.toMatchObject({ status: 401 });
+      expect(await getGhCliToken('github.com')).toBe(token);
+      expect(ghRuns()).toBe(1);
+      await expect(createOctokit(token, '', 'github.com').rest.users.getAuthenticated()).rejects.toMatchObject({ status: 401 });
+      expect(await getGhCliToken('github.com')).toBe(token);
+      expect(ghRuns()).toBe(2);
+    } finally {
+      globalThis.fetch = previousFetch;
+      if (previousConfigDir === undefined) delete process.env.GH_CONFIG_DIR;
+      else process.env.GH_CONFIG_DIR = previousConfigDir;
+      if (previousPath === undefined) delete process.env.PATH;
+      else process.env.PATH = previousPath;
+      fs.rmSync(ghConfigDir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('enterprise-host octokit request URLs', () => {
   test('GraphQL goes to /api/graphql and REST to /api/v3 on the host root', async () => {
     const requestedUrls = [];

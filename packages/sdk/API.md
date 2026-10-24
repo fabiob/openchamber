@@ -253,6 +253,31 @@ Omit `options`, or pass `{ scope: 'instance' }`, for this existing server-owned 
 
 `setStatusControls` accepts zero to four declarations. A button is `{ kind: 'button', id, label, disabled? }`; a select is `{ kind: 'select', id, label, value, options, disabled? }`, with one to 16 unique options and a selected value in that list. IDs are kebab-case and at most 40 characters; labels are 1 to 60 characters; option values are 1 to 80 characters. Register `onStatusControl` synchronously after `connectHost`, then feature-gate `setStatusControls` with `features.statusControls`. Buttons receive no `value`; select events carry a declared value. The host rejects stale, unknown, disabled, or invalid controls. It accepts at most 20 changed control publications per second per frame and avoids semantic no-op updates. Controls exist only for the expanded, mounted status frame that registered them. Folding or hiding the section removes controls and listeners. A project change clears header controls; publish them again from `onDirectory`. Workspace subscriptions remain active. Old hosts return `UNSUPPORTED`; keep a body control visible until `setStatusControls` succeeds.
 
+#### Sections the app draws
+
+With `source`, the app draws the section itself and loads no frame: `{ source: { path: '/status', interval?: 2000 }, title?: 'Resources' }`. It needs `contributes.service`; a section with a source and no `entry` needs no `panel.entry` either. While the section is shown and expanded, the app sends `GET /status` to your service, then again `interval` ms (1000 to 60000, default 2000) after each answer. The query carries `locale` (the app's language, such as `uk` or `pt-BR`) and `directory` when the panel shows a project. Answer with JSON:
+
+```json
+{
+  "rows": [
+    { "kind": "line", "id": "cpu", "label": "CPU", "content": { "kind": "bar", "value": 25, "tone": "info" }, "value": "25%" },
+    { "kind": "line", "id": "app", "label": "OpenChamber", "value": "1.6 GB",
+      "content": { "kind": "chart", "values": [1.5e9, 1.6e9], "unit": "bytes", "step": 2, "tone": "accent" } },
+    { "kind": "line", "id": "web", "label": "web", "dot": "success",
+      "content": { "kind": "chips", "chips": [{ "id": "port-5173", "label": ":5173", "url": "http://localhost:5173" }] },
+      "actions": [{ "kind": "button", "id": "stop-web", "label": "Stop", "variant": "destructive", "confirm": "Stop web?" }] },
+    { "kind": "note", "id": "hint", "text": "Docker isn't running.", "tone": "warning" }
+  ],
+  "controls": [{ "kind": "button", "id": "refresh", "label": "Refresh" }]
+}
+```
+
+A `line` has a `label` and optionally an `icon` (a Remixicon name; an unknown one is left out), a status `dot`, one `content`, a `value` with `valueTone`, a `badge` `{ label, tone? }`, a `tooltip`, and up to two `actions`. `content` is a `bar` (`value` 0 to 100), a `chart` (`values` oldest first, at most 120; `max`; `unit` `bytes`, `percent` or `count` for the hover label; `step` seconds between points), `chips` (one to six, each with an optional `http(s)` `url` the chip opens), `text`, or a `segmented` choice of two to four options. Actions are a `button` (`variant` `default`, `outline` or `destructive`; `confirm` asks on the first click and acts on the second), a `switch` (`checked`), or a `select`. A `note` is a line of text, `muted` by default or tinted `info`, `warning` or `error`. `controls` are header controls in the `setStatusControls` shape. Tones are `default`, `muted`, `accent`, `success`, `warning`, `error` and `info`; the app takes their colours from its theme. At most 16 rows. Row ids are unique, and so are control ids across the whole answer. Types: `GuestStatusView` and friends in `@openchamber/sdk`; the app checks answers with `guestStatusViewSchema` from `@openchamber/sdk/schemas` and shows an error instead of an answer that does not parse.
+
+When the user activates a control, the app posts `{ "id": "stop-web" }` to the same path, with `value` for a choice (`on` or `off` for a switch), and reads the section again as soon as you answer. Answer 2xx when it worked; otherwise the app shows an error toast with your `{ "message": "..." }` when the body has one. The choice shows at once and stays until a reading taken after your answer.
+
+Keep `entry` beside `source` to support OpenChamber versions that predate it: they ignore `source` and load the frame. Web and desktop only, like every status section.
+
 ### File editors
 
 `contributes.fileEditors` lists up to 8 editors: `{ id: 'canvas', title: 'Excalidraw', match: ['*.excalidraw', '*.excalidraw.md'], entry: 'editor/index.html' }`. `match` holds 1 to 16 file-name patterns, compared case-insensitively with the name only (no `/`); `*` is any run of characters, `?` one, and a pattern must have at least one character that is not a wildcard. `entry` is package `.html` with built scripts, checked at install. `content` is `"text"` (the default) or `"binary"`: a text editor claims only text files and gets the text with `\n` line endings (the host restores the file's own on write); a binary editor claims any matching file, gets its bytes as a `Uint8Array`, returns bytes, and has no source view, and the host saves its unsaved changes before it moves to or from fullscreen. When the user opens a matching file in Files, the viewer loads your page instead of its own preview; the first enabled, approved extension in the list wins, ahead of the built-in viewers. `ctx.surface` is `file`.

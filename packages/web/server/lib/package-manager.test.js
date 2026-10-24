@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Mock child_process to prevent real spawnSync calls that would hang in tests
 vi.mock('node:child_process', () => ({
@@ -535,8 +537,54 @@ describe('executeUpdate', () => {
 
 describe('detectPackageManagerDetails', () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     spawnSync.mockReset();
     vi.unstubAllEnvs();
+  });
+
+  it.each([
+    ['Windows pnpm store', String.raw`D:\pnpm-store\v11\links\@openchamber\web\2.5.1\hash\node_modules\@openchamber\web`, 'pnpm'],
+    ['POSIX pnpm store', '/home/user/.local/share/pnpm-store/v11/links/@openchamber/web/2.5.1/hash/node_modules/@openchamber/web', 'pnpm'],
+    ['case-insensitive Windows pnpm store', String.raw`D:\PNPM-STORE\v11\links\@openchamber\web\2.5.1\hash\node_modules\@openchamber\web`, 'pnpm'],
+    ['pnpm virtual store', '/opt/global/node_modules/.pnpm/@openchamber+web@2.5.1/node_modules/@openchamber/web', 'pnpm'],
+    ['npm install', '/usr/local/lib/node_modules/@openchamber/web', 'npm'],
+    ['unrelated store name', '/opt/pnpm-store-backup/node_modules/@openchamber/web', 'npm'],
+  ])('uses the install path for %s when global roots cannot establish ownership', async (_name, packagePath, packageManager) => {
+    vi.stubEnv('OPENCHAMBER_RUNTIME', '');
+    vi.stubEnv('OPENCHAMBER_PACKAGE_MANAGER', '');
+    vi.stubEnv('npm_config_user_agent', '');
+    vi.stubEnv('npm_execpath', '');
+    spawnSync.mockImplementation((command, args) => {
+      if (command !== 'npm' && command !== 'pnpm') {
+        return { status: 1, stdout: '', stderr: '' };
+      }
+      if (args[0] === '--version') {
+        return { status: 0, stdout: '10.0.0', stderr: '' };
+      }
+      if (args[0] === 'list') {
+        return { status: 0, stdout: '@openchamber/web 2.5.1', stderr: '' };
+      }
+      return { status: 1, stdout: '', stderr: '' };
+    });
+    vi.resetModules();
+    const { detectPackageManagerDetails, getUpdateCommand } = await import('./package-manager.js');
+    const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+    const resolve = path.resolve;
+    vi.spyOn(path, 'resolve').mockImplementation((...parts) => (
+      parts.length === 3 && parts[0] === moduleDir && parts[1] === '..' && parts[2] === '..'
+        ? packagePath
+        : resolve(...parts)
+    ));
+
+    expect(detectPackageManagerDetails()).toMatchObject({
+      packageManager,
+      packagePath,
+      reason: 'hinted-visible-install',
+      globalNodeModulesRoot: null,
+    });
+    expect(getUpdateCommand()).toBe(packageManager === 'pnpm'
+      ? 'pnpm add -g @openchamber/web@latest'
+      : 'npm install -g @openchamber/web@latest');
   });
 
   it('keeps reporting a copy no package manager installed after the first detection', async () => {

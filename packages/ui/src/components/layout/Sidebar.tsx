@@ -263,8 +263,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMobile, children, cl
                 className={cn(
                     'flex h-full shrink-0 flex-col',
                     peeking
-                        // Above the chat, the header and an expanded zone (z-20);
-                        // under the titlebar controls (z-30).
+                        // Above the chat, the header and the zones; under the
+                        // titlebar controls (z-30).
                         ? 'absolute inset-s-0 top-0 z-[25] border-e border-border bg-sidebar shadow-xl'
                         : 'relative z-10 transition-opacity ease-out motion-reduce:transition-none',
                     isResizing && 'pointer-events-none',

@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ReasoningTimelineBlock } from './parts/ReasoningPart';
 import ToolPart from './parts/ToolPart';
+import { getLastOutputLine } from './parts/toolOutput';
 import { OPENCODE_TOOLS } from '@/lib/opencode/tools';
 import { isRunningSubagentRunMessage, readSubagentRun, type SubagentRun } from '@/lib/opencode/subagent-run';
 import { readDispatchedSessionResult, type DispatchedSessionResult } from '@/lib/opencode/dispatched-session';
@@ -92,11 +93,13 @@ const CompactionNotice: React.FC<{ message: Extract<Message, { role: 'compaction
     );
 };
 
+type ShellRow = { part: ToolPartType; failureReason?: string };
+
 /**
  * A `!command` run is shown as the shell tool the agent would have called, so
  * both read the same: the tool row renders it from a synthesized tool part.
  */
-const toShellToolPart = (message: Extract<Message, { role: 'shell' }>): ToolPartType => {
+const toShellRow = (message: Extract<Message, { role: 'shell' }>): ShellRow => {
     const input = { command: message.command };
     const start = message.time.created;
     const end = message.time.completed ?? start;
@@ -115,14 +118,23 @@ const toShellToolPart = (message: Extract<Message, { role: 'shell' }>): ToolPart
         tool: OPENCODE_TOOLS.shell,
     };
     if (message.status === 'running') {
-        return { ...base, state: { status: 'running', input, metadata: { output }, time: { start } } };
+        return { part: { ...base, state: { status: 'running', input, metadata: { output }, time: { start } } } };
     }
     if (failed) {
         const detail = message.signal ?? message.exit;
         const reason = detail !== undefined ? `${message.status} (${detail})` : message.status;
-        return { ...base, state: { status: 'error', input, error: reason, output, time: { start, end } } };
+        // A command that ran to its end prints why it failed as its last line;
+        // for one killed or timed out, how it ended is the reason. A truncated
+        // output keeps only its start, so its last line is not the end.
+        const lastLineIsReason = message.status === 'exited'
+            && message.signal === undefined
+            && message.output?.truncated !== true;
+        return {
+            part: { ...base, state: { status: 'error', input, error: reason, output, time: { start, end } } },
+            failureReason: (lastLineIsReason ? getLastOutputLine(output) : undefined) ?? reason,
+        };
     }
-    return { ...base, state: { status: 'completed', input, output, time: { start, end } } };
+    return { part: { ...base, state: { status: 'completed', input, output, time: { start, end } } } };
 };
 
 // A shell row that opens the session gets the top spacing a first user
@@ -130,12 +142,12 @@ const toShellToolPart = (message: Extract<Message, { role: 'shell' }>): ToolPart
 const ShellNotice: React.FC<{ message: Extract<Message, { role: 'shell' }>; isFirstRow: boolean }> = ({ message, isFirstRow }) => {
     const isMobile = useUIStore((state) => state.isMobile);
     const [expanded, setExpanded] = React.useState(false);
-    const part = React.useMemo(() => toShellToolPart(message), [message]);
+    const { part, failureReason } = React.useMemo(() => toShellRow(message), [message]);
     const toggle = React.useCallback(() => setExpanded((value) => !value), []);
 
     return (
         <NoticeRow spacingClassName={cn('pb-2', isFirstRow && (isMobile ? 'pt-2' : 'pt-4'))}>
-            <ToolPart part={part} isExpanded={expanded} onToggle={toggle} isMobile={isMobile} />
+            <ToolPart part={part} isExpanded={expanded} onToggle={toggle} isMobile={isMobile} failureReason={failureReason} />
         </NoticeRow>
     );
 };

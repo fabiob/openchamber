@@ -21,23 +21,23 @@ Full-screen extension pages are separate from this rail registry. `contributes.p
   `availability: 'has-content'` surfaces (chat) are hidden from the
   rail until a tab of their mode exists, and stay visible for as long as one
   does — they must not disappear while in use.
-- `width` picks one of two default panel widths, used until the user resizes
-  that surface (`CONTEXT_SURFACE_WIDTHS`): `wide`, 640 px, for code beside the
-  chat (files, diff, terminal, walkthrough), and `regular`, 540 px, for every
-  other surface, guest panels included. Do not add a third size or a
-  per-surface number. A resize is remembered in px per mode in
-  `useUIStore.contextPanelByDirectory[dir].widthByMode` and restored on reload.
+- A zone has one size whatever surface it shows, so switching surfaces on
+  the rail leaves its edge where it was: 640 px wide for a side zone until the
+  user resizes it (`CONTEXT_ZONE_DEFAULT_WIDTH`), the bottom zone 320 px tall.
+  A resize is remembered in px per zone in
+  `useUIStore.contextPanelByDirectory[dir].sizeByZone` and restored on reload;
+  state from builds that kept a size per surface (`widthByMode`,
+  `heightByMode`) loads each zone at the size of the surface it showed.
   The width does not follow the chat area: a sidebar toggle or a window resize
   leaves it alone, and it only narrows when it would leave the chat less than
   its minimum column. `ContextPanel` keeps the chat area's width as state only
   while it decides something (expanded, or that ceiling binds), and applies a
   change that arrives during a side-column animation once it ends. Older
-  builds also stored `widthFractionByMode`; hydration ignores it and keeps the
-  pixel width the same resize stored.
-  The file surface stores its full editor width under `file`. Without an
+  builds also stored `widthFractionByMode`; hydration ignores it.
+  The file surface with an editor takes its zone's width. Without an
   editor, the panel uses `contextEditorTreeWidth`, the same pixel width as the
   docked file tree. Resizing the tree-only panel updates that shared tree width
-  without changing the full editor width. Old `file-tree` width entries are
+  without changing the zone's width. Old `file-tree` width entries are
   discarded on hydration. Tree-only mode temporarily suspends panel expansion;
   reopening the editor restores its previous expanded state. The tree docks
   to the side `fileTreeSide` names (right by default, Settings › General ›
@@ -95,11 +95,28 @@ keep the full height). The chat is always the centre and cannot move.
   unsaved text and undo, the terminal session and the walkthrough's place. An
   Electron webview reloads whenever its element moves, so a browser tab
   reloads when its surface moves to another zone; nothing else moves it.
-- In a narrow window the chat keeps 400 px: a side zone that opens without
+- In a narrow window the chat keeps 320 px: a side zone that opens without
   room folds the session sidebar, then closes the other side zone, and both
   come back when it closes (`ZoneFitArbiter`, `lib/workspace/zoneFit.ts`).
+- Expanding a zone never covers the chat. The zone stays in the layout at
+  the largest size that leaves the chat a column as wide as the session
+  sidebar and at least 320 px (200 px of height beside the bottom zone; a
+  row under 640 px wide leaves less, since a zone keeps 320 px), and
+  the session sidebar folds while it is expanded so that column is where the
+  sidebar was. Collapsing gives the sidebar back unless the user toggled it
+  in between (`ZoneFitArbiter`). The zone takes the row as it will be once
+  the sidebar has folded, so it grows in one move with it.
 - Another window's move is adopted through the `storage` event
   (`zoneSync.ts`); each window keeps its own open zones.
+
+### Why an expanded zone stays in the layout and not over the chat
+
+It used to float over the chat with a spacer holding its docked size, so the
+chat kept its width underneath and was hidden. People expand a zone to read
+a diff or a page next to the agent's work and still want to write to it.
+The float existed because collapsing straight back into the layout squeezed
+the chat to nothing and the transcript measured its rows at that width; with
+the chat column never below its minimum that cannot happen.
 
 ## Adding a surface
 

@@ -16,6 +16,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -29,6 +30,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict: Record<I18nKey, string> = {
   "opencodeCompatibility.bundled": "OpenCode は OpenChamber に同梱されています。OpenCode v2 を利用するには OpenChamber を更新してください。",
@@ -155,6 +157,7 @@ export const dict: Record<I18nKey, string> = {
   ...usageStatsI18n.ja,
   ...webSearchI18n.ja,
   ...sessionWarmingI18n.ja,
+  ...heapSnapshotI18n.ja,
   ...overviewI18n.ja,
   ...isolatedSpacesI18n.ja,
   ...sourceBoardI18n.ja,
@@ -168,6 +171,7 @@ export const dict: Record<I18nKey, string> = {
   ...pluginsGridI18n.ja,
   ...integrationsCatalogI18n['ja'],
   ...diffFindI18n['ja'],
+  ...guestStatusViewI18n['ja'],
   'terminalView.actions.attachSelection': '選択した出力を添付',
   'terminalView.actions.copySelection': '選択した出力をコピー',
   'terminalView.toast.selectionCopied': '出力をコピーしました',
@@ -2713,6 +2717,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.showFormattedJson': '整形JSONを表示',
   'chat.toolPart.showNavigableJson': 'ナビゲーション可能なJSONを表示',
   'chat.toolPart.openFile': 'ファイルを開く',
+  'chat.toolPart.openImageExpanded': '開く',
   'chat.toolPart.openFileAtFirstChange': '最初の変更箇所でファイルを開く',
   'chat.toolPart.openFileDiff': 'ファイル差分を開く',
   'chat.toolPart.copyOutput': '出力をコピー',
@@ -3441,6 +3446,7 @@ export const dict: Record<I18nKey, string> = {
   'mainLayout.mobile.closeDrawerAria': 'ドロワーを閉じる',
   'sortableTabsStrip.aria.tabs': 'タブ',
   'openChamberLogo.aria.logo': 'OpenChamberロゴ',
+  'markdownRenderer.code.proposal': '提案',
   'markdownRenderer.code.actions.copyTitle': 'コードをコピー',
   'markdownRenderer.code.actions.copiedTitle': 'コピーしました',
   'markdownRenderer.table.actions.copyTitle': 'テーブルをコピー',

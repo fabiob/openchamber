@@ -189,7 +189,7 @@ IPC results if its endpoint changes while the read is pending.
 | `scripts/bundle-main.mjs` | Bundles Electron main code into `dist-bundle/{entry,main,early-startup}.mjs` for packaging |
 | `scripts/rebuild-native.mjs` | Rebuilds native modules against the Electron runtime |
 | `scripts/package.mjs` | Runs `electron-builder`, with unsigned Windows builds when signing env is missing |
-| `resources/` | Packaged web assets, icons, macOS entitlements, and the NSIS include for the Windows installer |
+| `resources/` | Packaged web assets, icons, macOS entitlements, and the NSIS include for the Windows installer. Every file in `resources/icons` is written by `bun run brand:generate` (`scripts/brand`); do not edit them by hand |
 
 ## Development
 

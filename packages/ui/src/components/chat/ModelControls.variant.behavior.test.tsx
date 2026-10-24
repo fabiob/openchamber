@@ -591,7 +591,7 @@ describe('ModelControls effort restore', () => {
     const { dom, cleanup } = await renderModelControls();
     try {
       expect(dom.container.querySelector('.model-controls__model-trigger')?.textContent).toContain('GPT Five');
-      expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe('high');
+      expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe('High');
       expect(dom.container.querySelector('.model-controls__agent-label')?.textContent).toBe('Build');
       expect(useConfigStore.getState().currentVariant).toBe('high');
       expect(overrideWrites).toEqual([]);
@@ -650,7 +650,7 @@ describe('ModelControls effort restore', () => {
     try {
       const label = () => dom.container.querySelector('.model-controls__variant-label');
       expect(useConfigStore.getState().currentVariant).toBe('high');
-      expect(label()?.textContent?.trim()).toBe('high');
+      expect(label()?.textContent?.trim()).toBe('High');
       // Only the "Default" option is muted; an inherited effort shows like a picked one.
       expect(label()?.classList.contains('text-muted-foreground')).toBe(false);
 
@@ -869,8 +869,8 @@ describe('ModelControls effort restore', () => {
     }
   });
 
-  for (const [isMobile, variant] of [
-    [false, 'low'], [true, null],
+  for (const [isMobile, variant, variantLabel] of [
+    [false, 'low', 'Low'], [true, null, 'Default'],
   ] as const) {
     test(`controlled BTW selection stays independent (mobile: ${isMobile}, effort: ${variant})`, async () => {
       const btwSessionId = 'btw-pending:ses_restore';
@@ -893,7 +893,7 @@ describe('ModelControls effort restore', () => {
         expect(variantWrites).toEqual([]);
         expect(saveModel.mock.calls).toEqual([]);
         expect(dom.container.querySelector('.model-controls__agent-label')).toBeNull();
-        expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe(variant ?? 'Default');
+        expect(dom.container.querySelector('.model-controls__variant-label')?.textContent?.trim()).toBe(variantLabel);
         if (!isMobile) {
           expect(dom.container.querySelector('.model-controls__model-trigger')?.closest('[data-menu-open]')?.getAttribute('data-menu-open')).toBe('false');
         }

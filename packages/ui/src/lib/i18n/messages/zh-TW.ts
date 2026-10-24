@@ -16,6 +16,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -29,6 +30,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict: Record<I18nKey, string> = {
   "opencodeCompatibility.bundled": "OpenCode 隨 OpenChamber 一起提供。請更新 OpenChamber 以取得 OpenCode v2。",
@@ -155,6 +157,7 @@ export const dict: Record<I18nKey, string> = {
   ...usageStatsI18n['zh-TW'],
   ...webSearchI18n['zh-TW'],
   ...sessionWarmingI18n['zh-TW'],
+  ...heapSnapshotI18n['zh-TW'],
   ...overviewI18n['zh-TW'],
   ...isolatedSpacesI18n['zh-TW'],
   ...sourceBoardI18n['zh-TW'],
@@ -168,6 +171,7 @@ export const dict: Record<I18nKey, string> = {
   ...pluginsGridI18n['zh-TW'],
   ...integrationsCatalogI18n['zh-TW'],
   ...diffFindI18n['zh-TW'],
+  ...guestStatusViewI18n['zh-TW'],
   'terminalView.actions.attachSelection': '附加所選輸出',
   'terminalView.actions.copySelection': '複製所選輸出',
   'terminalView.toast.selectionCopied': '已複製輸出',
@@ -2689,6 +2693,7 @@ export const dict: Record<I18nKey, string> = {
   'chat.toolPart.showFormattedJson': '顯示格式化 JSON',
   'chat.toolPart.showNavigableJson': '顯示可導覽 JSON',
   'chat.toolPart.openFile': '開啟檔案',
+  'chat.toolPart.openImageExpanded': '開啟',
   'chat.toolPart.openFileAtFirstChange': '在首次變更處開啟檔案',
   'chat.toolPart.openFileDiff': '開啟檔案差異',
   'chat.toolPart.copyOutput': '複製輸出',
@@ -3406,6 +3411,7 @@ export const dict: Record<I18nKey, string> = {
   'mainLayout.mobile.closeDrawerAria': '關閉抽屜',
   'sortableTabsStrip.aria.tabs': '分頁',
   'openChamberLogo.aria.logo': 'OpenChamber 標誌',
+  'markdownRenderer.code.proposal': '提議',
   'markdownRenderer.code.actions.copyTitle': '複製程式碼',
   'markdownRenderer.code.actions.copiedTitle': '已複製',
   'markdownRenderer.table.actions.copyTitle': '複製表格',

@@ -202,7 +202,7 @@ const OpenInAppListIcon = ({ label, iconDataUrl }: { label: string; iconDataUrl?
     <span
       className={cn(
         'size-4 rounded-sm flex items-center justify-center',
-        'oc-tile-inset text-[9px] font-medium text-muted-foreground'
+        'oc-tile-inset text-[0.5625rem] font-medium text-muted-foreground'
       )}
     >
       {initial}
@@ -4588,7 +4588,9 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
 
         {!isSelectedNonText && textViewMode === 'edit' && (
           <>
-            {withTooltip(t('filesView.editor.findInFile'),
+            {/* The Markdown preview has its own find button; this one drives the
+                editor, which the preview replaces. */}
+            {!(isMarkdown && getMdViewMode() === 'preview') && withTooltip(t('filesView.editor.findInFile'),
               <Button
                 variant="ghost"
                 size="sm"
@@ -4998,7 +5000,7 @@ export const FilesView: React.FC<FilesViewProps> = ({ mode = 'full', visible = t
               variant="outline"
               onClick={() => void saveAndContinue()}
               disabled={isSaving}
-              className="border-[var(--status-success-border)] bg-[var(--status-success-background)] text-[var(--status-success)] hover:bg-[rgb(var(--status-success)/0.2)]"
+              className="border-[var(--status-success-border)] bg-[var(--status-success-background)] text-[var(--status-success)] hover:bg-[var(--status-success)]/20"
             >
               {t('filesView.unsaved.saveChanges')}
             </Button>

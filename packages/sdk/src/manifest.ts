@@ -1,5 +1,6 @@
 import type { OpenChamberManifestApiVersion } from './api-version.ts';
 import type { FileEditorContribution } from './file-editor.ts';
+import { GUEST_STATUS_SOURCE_INTERVAL_DEFAULT, type StatusSectionSource } from './status-view.ts';
 
 export const PANEL_ID = /^[a-z][a-z0-9-]*$/;
 
@@ -61,9 +62,15 @@ export type PageContribution = true | { entry: string; title?: string };
  * this section and no rail panel. `title` replaces `panel.name` on the section
  * header; `height` is the starting frame height in CSS px before the guest
  * reports its own through `setHeight`.
+ *
+ * `source` makes the host draw the section itself from the service's answers
+ * (`status-view.ts`), without a frame. The object form needs `entry`,
+ * `source`, or both: a host that knows `source` uses it, an older one loads
+ * `entry`.
  */
 export type StatusSectionContribution = true | {
-  entry: string;
+  entry?: string;
+  source?: StatusSectionSource;
   title?: string;
   height?: number;
   defaultExpanded?: boolean;
@@ -670,7 +677,16 @@ export const resolveStatusSectionEntry = (
 ): string | null => {
   const section = contributes.statusSection;
   if (!section) return null;
-  return section === true ? contributes.panel.entry ?? null : section.entry;
+  return section === true ? contributes.panel.entry ?? null : section.entry ?? null;
+};
+
+/** Where the host reads a source-backed section, with the interval resolved; `null` for a frame-only section. */
+export const resolveStatusSectionSource = (
+  contributes: Pick<OpenChamberContributes, 'statusSection'>,
+): Required<StatusSectionSource> | null => {
+  const section = contributes.statusSection;
+  if (!section || section === true || !section.source) return null;
+  return { path: section.source.path, interval: section.source.interval ?? GUEST_STATUS_SOURCE_INTERVAL_DEFAULT };
 };
 
 /** Clamp a requested status section height to what the host allows. */

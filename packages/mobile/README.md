@@ -77,4 +77,4 @@ Required local tools:
 
 ## Generated Assets
 
-The native projects currently use Capacitor-generated launcher and splash assets. Replace them before release branding work.
+Launcher icons (Android adaptive, legacy, round and themed layers, `assets/icon-*.png`), the Android notification icon and the iOS Control Center symbol are written by `bun run brand:generate` from the workspace root (`scripts/brand`). The iOS app icon is the desktop's `AppIcon.icon`. Launch splash images are still Capacitor's placeholders.
