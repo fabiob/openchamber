@@ -16,6 +16,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -29,6 +30,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict: Record<I18nKey, string> = {
   "opencodeCompatibility.bundled": "O OpenCode está incluído no OpenChamber. Atualize o OpenChamber para obter o OpenCode v2.",
@@ -165,6 +167,7 @@ export const dict: Record<I18nKey, string> = {
   ...usageStatsI18n['pt-BR'],
   ...webSearchI18n['pt-BR'],
   ...sessionWarmingI18n['pt-BR'],
+  ...heapSnapshotI18n['pt-BR'],
   ...overviewI18n['pt-BR'],
   ...isolatedSpacesI18n['pt-BR'],
   ...sourceBoardI18n['pt-BR'],
@@ -178,6 +181,7 @@ export const dict: Record<I18nKey, string> = {
   ...pluginsGridI18n['pt-BR'],
   ...integrationsCatalogI18n['pt-BR'],
   ...diffFindI18n['pt-BR'],
+  ...guestStatusViewI18n['pt-BR'],
   'terminalView.actions.attachSelection': 'Anexar saída selecionada',
   'terminalView.actions.copySelection': 'Copiar saída selecionada',
   'terminalView.toast.selectionCopied': 'Saída copiada',
@@ -2645,6 +2649,7 @@ export const dict: Record<I18nKey, string> = {
   "chat.statusRow.background.action": "Mover para segundo plano — o agente para de esperar e continua",
   "chat.statusRow.background.failed": "Não foi possível mover o trabalho para segundo plano",
   "chat.toolPart.background.label": "em segundo plano",
+  "chat.toolPart.openImageExpanded": "Abrir",
   "chat.toolPart.subagent.stop": "Parar subagente",
   "chat.toolPart.subagent.stopFailed": "Não foi possível parar o subagente",
   "chat.toolPart.background.stop": "Parar comando",
@@ -3402,6 +3407,7 @@ export const dict: Record<I18nKey, string> = {
   "mainLayout.mobile.closeDrawerAria": "Fechar gaveta",
   "sortableTabsStrip.aria.tabs": "Abas",
   "openChamberLogo.aria.logo": "Logo do OpenChamber",
+  "markdownRenderer.code.proposal": "Proposta",
   "markdownRenderer.code.actions.copyTitle": "Copiar código",
   "markdownRenderer.code.actions.copiedTitle": "Copiado",
   "markdownRenderer.table.actions.copyTitle": "Copiar tabela",

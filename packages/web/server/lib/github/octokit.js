@@ -6,7 +6,7 @@ import {
   isGhCliActiveForHost,
   isGhCliDisabledForHost,
 } from './auth.js';
-import { getGhCliToken } from './gh-cli-credential.js';
+import { forgetGhCliToken, getGhCliToken } from './gh-cli-credential.js';
 import { isTrustedGitHubHostOrStored } from './host-trust.js';
 
 // Per-request timeout for every GitHub call. Octokit v22 uses native fetch,
@@ -102,6 +102,11 @@ export function createOctokit(token, accountId = '', host = '') {
     options.baseUrl = `https://${normalizedHost}/api/v3`;
   }
   const octokit = new Octokit(options);
+  // A refused token that came from gh is asked from gh again next time.
+  octokit.hook.error('request', (error) => {
+    if (error?.status === 401) forgetGhCliToken(normalizedHost, token);
+    throw error;
+  });
   Object.defineProperty(octokit, 'openChamberCacheIdentity', {
     value: cacheIdentity,
   });

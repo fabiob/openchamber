@@ -26,12 +26,21 @@ const atLeast = ([major, minor], [wantMajor, wantMinor]) => major > wantMajor ||
 /**
  * Whether an instance answers as Gitea or Forgejo, and whether its version is
  * one this module supports: Gitea 1.21, which Forgejo 7.0 is compatible with,
- * or newer. `/version` needs no token. An unparseable version is let
- * through: a compatible server that words it differently still works.
+ * or newer. `/version` is read anonymously first; an instance that refuses
+ * anonymous reads (`REQUIRE_SIGNIN_VIEW`) is asked again with the token
+ * when there is one. Without one a refusal leaves the instance unknown, so
+ * it is let through and the sign-in decides. An unparseable version is let
+ * through too: a compatible server that words it differently still works.
  */
-export async function probeGiteaVersion({ origin, fetch, timeoutMs, label = 'Gitea' }) {
-  const client = createGiteaClient({ origin, token: null, fetch, timeoutMs, label });
-  const payload = await client.get('/version');
+export async function probeGiteaVersion({ origin, token = null, fetch, timeoutMs, label = 'Gitea' }) {
+  let payload;
+  try {
+    payload = await createGiteaClient({ origin, token: null, fetch, timeoutMs, label }).get('/version');
+  } catch (error) {
+    if (error?.status !== 401 && error?.status !== 403) throw error;
+    if (!token) return { version: null, supported: true };
+    payload = await createGiteaClient({ origin, token, fetch, timeoutMs, label }).get('/version');
+  }
   if (!isPlainObject(payload) || !isString(payload.version)) {
     throw new GiteaRequestError('provider-error', `The instance did not answer as ${label}`);
   }

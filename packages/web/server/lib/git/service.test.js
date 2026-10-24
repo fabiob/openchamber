@@ -1310,6 +1310,55 @@ describe('getStatus', () => {
 
     expect(status.diffStats.working[file]).toEqual({ insertions: 1, deletions: 0 });
   });
+
+  it('starts one Git process per question a status read asks (#5481)', async () => {
+    if (!canRunGit()) return;
+    // The wrapper is a shell script.
+    if (process.platform === 'win32') return;
+
+    const repo = createTempDir();
+    runGit(repo, ['init', '-b', 'main']);
+    runGit(repo, ['config', 'user.email', 'test@example.com']);
+    runGit(repo, ['config', 'user.name', 'Test User']);
+    fs.writeFileSync(path.join(repo, 'README.md'), 'one\n');
+    runGit(repo, ['add', 'README.md']);
+    runGit(repo, ['commit', '-m', 'initial']);
+    runGit(repo, ['remote', 'add', 'origin', createTempDir()]);
+    runGit(repo, ['update-ref', 'refs/remotes/origin/main', 'HEAD']);
+    runGit(repo, ['branch', '--set-upstream-to=origin/main']);
+    fs.appendFileSync(path.join(repo, 'README.md'), 'two\n');
+
+    const wrapperDirectory = createTempDir();
+    const invocations = path.join(createTempDir(), 'invocations');
+    const realGit = execFileSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' }).trim();
+    fs.writeFileSync(path.join(wrapperDirectory, 'git'), `#!/bin/sh
+echo "$*" >> "${invocations}"
+exec "${realGit}" "$@"
+`);
+    fs.chmodSync(path.join(wrapperDirectory, 'git'), 0o755);
+    vi.stubEnv('PATH', `${wrapperDirectory}${path.delimiter}${process.env.PATH || ''}`);
+
+    let status;
+    try {
+      status = await getStatus(repo);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+
+    expect(status).toMatchObject({ current: 'main', tracking: 'origin/main', mergeInProgress: null, rebaseInProgress: null });
+    // `remote get-url` runs because this repository is new to the remote
+    // existence cache; later reads within its window skip it.
+    const commands = fs.readFileSync(invocations, 'utf8').trim().split('\n').sort();
+    expect(commands).toEqual([
+      'diff --cached --numstat -z',
+      'diff-files -M --numstat -z',
+      'remote get-url -- upstream',
+      'rev-parse --git-dir --show-toplevel',
+      'rev-parse --git-path MERGE_HEAD --git-path MERGE_MSG --git-path rebase-merge --git-path rebase-apply',
+      'rev-parse --verify --quiet HEAD',
+      'status --porcelain -b -u --null -unormal',
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -4937,6 +4986,17 @@ describe.runIf(canRunGit())('continuing a conflicted rebase or merge', () => {
     expect((await getStatus(tmpDir)).rebaseInProgress).toBeTruthy();
   });
 
+  it('reports a merge in progress with its head and message', async () => {
+    const { tmpDir, git } = await createConflictingBranches();
+    const featureHead = (await git.revparse(['feature'])).trim();
+    expect(await merge(tmpDir, { branch: 'feature' })).toMatchObject({ success: false, conflict: true });
+
+    expect((await getStatus(tmpDir)).mergeInProgress).toEqual({
+      head: featureHead.slice(0, 7),
+      message: "Merge branch 'feature'",
+    });
+  });
+
   it('finishes a merge after the conflict is resolved', async () => {
     const { tmpDir, git, filePath } = await createConflictingBranches();
     expect(await merge(tmpDir, { branch: 'feature' })).toMatchObject({ success: false, conflict: true });
@@ -5262,6 +5322,29 @@ describe.runIf(canRunGit())('getBranches', () => {
     // Only what `git branch -a` knows: a branch nobody fetched is not listed.
     expect(branches.all).toContain('remotes/origin/react');
     expect(branches.all).not.toContain('remotes/origin/remote-only');
+  });
+
+  it('does not list a detached HEAD as a branch', async () => {
+    const { repository } = createRepositoryWithRemote({ remoteName: 'origin', defaultBranch: 'react' });
+    runGit(repository, ['tag', 'v2.1.3']);
+    runGit(repository, ['checkout', '--detach', 'v2.1.3']);
+
+    const branches = await getBranches(repository, { remote: 'local' });
+
+    expect(branches.all).not.toContain('v2.1.3');
+    expect(branches.branches).not.toHaveProperty('v2.1.3');
+  });
+
+  it('keeps a branch that shares its name with the detached HEAD', async () => {
+    const { repository } = createRepositoryWithRemote({ remoteName: 'origin', defaultBranch: 'react' });
+    runGit(repository, ['branch', 'v2.1.3']);
+    runGit(repository, ['tag', 'v2.1.3']);
+    runGit(repository, ['checkout', '--detach', 'refs/tags/v2.1.3']);
+
+    const branches = await getBranches(repository, { remote: 'local' });
+
+    expect(branches.all.filter((name) => name === 'v2.1.3')).toHaveLength(1);
+    expect(branches.branches['v2.1.3']).toMatchObject({ current: false });
   });
 
   it('reuses a remote\'s answer until its local tracking refs change', async () => {

@@ -128,8 +128,13 @@ which requests only providers enabled for this panel.
 
 Subagent status uses the Tasks section's leading icons: blue for busy/retrying,
 green for idle, and a neutral clock while status is unknown. A successful status
-snapshot also establishes idle for omitted sessions in that same directory,
-compared as normalized paths and skipping sessions whose status was invalidated.
+snapshot of the panel's directory also establishes idle for omitted children,
+skipping sessions whose status was invalidated. That snapshot is the server's
+list of running sessions (`getActiveSessionStatuses`): the host's covers every
+host directory, a space's covers only that space. So it covers a child in any
+directory on the same side of that boundary, including one that moved to
+another worktree (`session_move`); comparing the directories themselves left
+such a child on the clock forever once the page reloaded after it finished.
 The global status store fills the gap for children the snapshot does not cover:
 a child it holds as busy runs, and one it saw settle is idle (or failed).
 Permission requests and questions take precedence with a warning icon and text.
@@ -169,8 +174,17 @@ message's output tokens divided by the union of its nonempty text intervals.
 It excludes initial waiting, reasoning tokens and reasoning time, and earlier
 tool steps. It requires complete, valid text timing and a final message without
 tools, errors, synthetic text or ignored text. This measures text delivery from
-stored timestamps, not provider-side decode speed. The header shows only this
-rate; unavailable response timing never falls back to whole-turn speed.
+the live text timestamps, not provider-side decode speed. The header shows only
+this rate; unavailable response timing never falls back to whole-turn speed.
+OpenCode stores no timing for text, so a reloaded or never-watched turn has
+text stamped with its step's `created` and `completed`. A text start equal to
+`created` is that stamp, so Response speed is unknown after a reload.
+
+Hiding it there was weighed against one window for both cases, the whole final
+step from `created` to `completed`. That window gives the same number live and
+after a reload, but it counts the initial wait and reasoning, which the row's
+tooltip excludes, and it read about half the live rate on real turns. A missing
+number is better than a second, lower one for the same turn.
 
 Whole-turn speed uses output plus reasoning tokens from every step, divided by
 elapsed assistant time minus the union of completed and failed tool intervals.
@@ -269,6 +283,16 @@ The PR surface can watch a concrete remote while passive readers initially know
 only the automatic remote key, so the panel reads the freshest entry for the
 directory and branch across remote keys. This keeps its PR and checks rows in
 sync with the live PR surface without adding another request owner.
+
+### Why checks read "7/9" and not one word per state
+
+The Checks row shows passed out of all after a dot in the run's colour: red
+once any check failed, yellow while any still runs (the dot blinks on the
+shared clock), green when all passed. Skipped and neutral checks count as
+passed, as the server's summary counts them. This is the form GitHub's pull
+request list uses, so the number reads the same in both places. The row once
+showed "1 failed" or "2 running" alone, which gave no sense of how far the run
+was; the per-state counts now live in the row's tooltip.
 
 ### Changed files come from git status, not the session
 
@@ -373,7 +397,25 @@ helper and the host overlay controller. This does not increase the status
 frame's 320px height limit. The public contract is in `packages/sdk/API.md`,
 under Anchored popovers.
 
-`useWorkStatusExtensionSections` lists active guests with a `statusEntry` from
+### Sections the app draws
+
+An extension that declares `statusSection.source` gets no frame. `WorkStatusGuestView` reads its service (`lib/guests/status-view.ts`) and draws the answer with the panel's own row vocabulary: the same 28px rows, muted text, tone colours from the theme, pills for chips and badges, the shared `Button`, `Switch` and dropdown. The body is mounted under the same rule as a frame (shown, expanded), so reading starts and stops with it, and is keyed by guest and directory, so a project change starts from an empty view rather than showing the last project's numbers. Reads pause while the document is hidden. Header controls in the answer go through the same `GuestStatusControlBinding` a frame's `setStatusControls` uses, so `StatusHeaderControls` draws both.
+
+A failed read keeps the last view on screen, faded, under an error note; before the first answer the body says it is reading. An action holds its control, in a row or in the header, while the request runs, shows a chosen value at once, and keeps it until a read that started after the service's answer is on screen (`StatusViewPoller.refresh` resolves then), so a read already under way cannot flip it back. A refused action drops the choice and shows the service's message, or a generic one, in a toast. A row's tooltip covers the whole row, except on a row with a chart, whose own hover label owns the middle; there the tooltip sits on the label.
+
+#### Why the host polls and not the service pushing
+
+Polling a path keeps the service a plain HTTP handler, which is what every extension service already is, and reuses the authenticated `service/request` proxy with its pause, approval and size checks. A push channel would save requests while nothing changes, but needs a socket per section and reconnect logic in every extension. The interval has a floor of one second, reads never overlap, and a hidden document reads nothing.
+
+#### Why only theme tones and not colours
+
+The section sits among the app's own sections and follows the theme, light and dark, without the extension knowing either. An extension that needs its own colours keeps its frame.
+
+#### Why rows keep their objects between reads
+
+`createGuestStatusViewReader` returns the previous view untouched when the answer's body is byte-identical, and otherwise reuses each row object, and the header controls, whose JSON did not change. Rows are memoized by identity and the header binding follows the controls' identity, so a sample that moves one number redraws one row instead of the section and its header.
+
+`useWorkStatusExtensionSections` lists active guests with a `statusEntry` or `statusSource` from
 the catalog store (`useGuestStatusSections`). It is empty on VS Code and
 mobile, which load no guests; the panel is hidden there anyway, but the empty
 list is explicit rather than an accident of visibility. The rail owns loading

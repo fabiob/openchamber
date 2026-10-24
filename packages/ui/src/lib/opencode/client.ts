@@ -855,6 +855,17 @@ class OpencodeService {
   }
 
   /**
+   * Writes a heap snapshot of the OpenCode server process into OpenCode's log
+   * directory and returns its path on the OpenCode machine (OpenCode 2.1.4;
+   * older servers answer 404). OpenCode pauses while the heap serializes. The
+   * route takes no location, so it starts no MCP servers.
+   */
+  async writeHeapSnapshot(): Promise<{ path: string }> {
+    const result = await call("debug.heapDump", () => this.client.debug.heapDump())
+    return { path: result.path }
+  }
+
+  /**
    * The list is global, but v2 serves it through a location: asked without a
    * directory, OpenCode starts its own working directory (MCP servers
    * included) to answer. The current directory is already running.

@@ -1,5 +1,6 @@
 import { appendManagedPlugin } from './managed-plugin-config.js';
 import { isLimitFailoverConfigured } from '../limit-failover/policy.js';
+import { materializeSessionTitlePlugin } from './session-title-plugin.js';
 
 export const MANAGED_CONFIG_FILE_NAME = 'opencode.managed.json';
 
@@ -99,6 +100,7 @@ export const createManagedConfigRuntime = ({
     if (agentToolRuntime && limitFailoverRuntime && isLimitFailoverConfigured(settings)) {
       directories.push(await limitFailoverRuntime.materializePlugin());
     }
+    directories.push(await materializeSessionTitlePlugin({ fsPromises, path, instanceDir }));
     return directories;
   };
 

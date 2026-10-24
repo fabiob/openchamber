@@ -79,7 +79,8 @@ export const SyncActions: React.FC<SyncActionsProps> = ({
   // only ever pushes to a destination picked in the dialog.
   const publishLabel = t(choosesPushDestination ? 'gitView.publish.pushTo' : 'gitView.publish.title');
   const primaryWord = publish ? publishLabel : t('gitView.sync.sync');
-  const primaryCounts = [
+  // Without a branch there is nothing to count against, so no counts.
+  const primaryCounts = detached ? '' : [
     behindCount > 0 ? `↓${behindCount}` : null,
     aheadCount > 0 ? `↑${aheadCount}` : null,
   ].filter(Boolean).join(' ');

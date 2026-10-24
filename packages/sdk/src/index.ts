@@ -22,6 +22,31 @@ export {
 } from './shells.ts';
 export { GUEST_STATUS_CONTROLS_MAX, GUEST_STATUS_CONTROL_ID, GUEST_STATUS_CONTROL_LABEL_MAX, GUEST_STATUS_CONTROL_OPTIONS_MAX, GUEST_STATUS_CONTROL_VALUE_MAX } from './status-controls.ts';
 export type { GuestStatusControl, GuestStatusControlEvent, GuestStatusControlOption } from './status-controls.ts';
+export {
+  GUEST_STATUS_SOURCE_INTERVAL_DEFAULT,
+  GUEST_STATUS_SOURCE_INTERVAL_MAX,
+  GUEST_STATUS_SOURCE_INTERVAL_MIN,
+  GUEST_STATUS_VIEW_ACTIONS_MAX,
+  GUEST_STATUS_VIEW_CHART_POINTS_MAX,
+  GUEST_STATUS_VIEW_CHIPS_MAX,
+  GUEST_STATUS_VIEW_ICON,
+  GUEST_STATUS_VIEW_NOTE_MAX,
+  GUEST_STATUS_VIEW_ROWS_MAX,
+  GUEST_STATUS_VIEW_SEGMENTS_MAX,
+  GUEST_STATUS_VIEW_SEGMENTS_MIN,
+  GUEST_STATUS_VIEW_TEXT_MAX,
+} from './status-view.ts';
+export type {
+  GuestStatusAction,
+  GuestStatusActionEvent,
+  GuestStatusChartUnit,
+  GuestStatusChip,
+  GuestStatusContent,
+  GuestStatusRow,
+  GuestStatusTone,
+  GuestStatusView,
+  StatusSectionSource,
+} from './status-view.ts';
 export type { OpenChamberManifestApiVersion } from './api-version.ts';
 export {
   compareOpenChamberVersions,
@@ -73,6 +98,7 @@ export {
   resolveAttachEntry,
   resolvePageEntry,
   resolveStatusSectionEntry,
+  resolveStatusSectionSource,
   resolveAttachMode,
   resolveIntegrationApi,
   resolveIntegrationAuth,

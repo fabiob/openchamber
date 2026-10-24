@@ -5,7 +5,7 @@ import yaml from 'yaml';
 
 import { assertGitAvailable, looksLikeAuthError, runGit } from './git.js';
 import { parseSkillRepoSource } from './source.js';
-import { removeDirectory } from './remove-directory.js';
+import { removeDirectory, removeStaleCatalogFolders } from './remove-directory.js';
 
 const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 
@@ -83,6 +83,7 @@ export async function scanSkillsRepository({
   // checkout or `show` that lazily fetch blobs from the partial clone.
   const remoteGitOptions = { identity, credentialResolver };
 
+  void removeStaleCatalogFolders();
   const tempBase = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'openchamber-skills-scan-'));
 
   try {
@@ -111,7 +112,14 @@ export async function scanSkillsRepository({
       if (sparseSet.ok) {
         const checkout = await runGit(['-C', tempBase, 'checkout', '--force', 'HEAD'], { ...remoteGitOptions, timeoutMs: 60_000 });
         if (checkout.ok) {
-          const lsFiles = await runGit(['-C', tempBase, 'ls-files'], { timeoutMs: 15_000 });
+          // The index also lists the files the sparse checkout left out, and
+          // each of those would cost a `git show` below; the subpath limits
+          // the list to what is on disk, as `ls-tree` does in the fallback.
+          const lsFilesArgs = ['-C', tempBase, 'ls-files'];
+          if (effectiveSubpath) {
+            lsFilesArgs.push('--', effectiveSubpath);
+          }
+          const lsFiles = await runGit(lsFilesArgs, { timeoutMs: 15_000 });
           if (lsFiles.ok) {
             skillMdPaths = lsFiles.stdout
               .split(/\r?\n/)

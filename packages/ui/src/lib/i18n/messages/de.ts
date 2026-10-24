@@ -15,6 +15,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -28,6 +29,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict = {
   "opencodeCompatibility.bundled": "OpenCode ist in OpenChamber enthalten. Aktualisieren Sie OpenChamber, um OpenCode v2 zu erhalten.",
@@ -154,6 +156,7 @@ export const dict = {
   ...usageStatsI18n.de,
   ...webSearchI18n.de,
   ...sessionWarmingI18n.de,
+  ...heapSnapshotI18n.de,
   ...overviewI18n.de,
   ...isolatedSpacesI18n.de,
   ...sourceBoardI18n.de,
@@ -167,6 +170,7 @@ export const dict = {
   ...pluginsGridI18n.de,
   ...integrationsCatalogI18n['de'],
   ...diffFindI18n['de'],
+  ...guestStatusViewI18n['de'],
   'common.language.german': 'Deutsch',
   'common.loading': 'Wird geladen...',
   'common.unavailable': 'Nicht verfügbar',
@@ -2432,6 +2436,7 @@ export const dict = {
   'chat.toolPart.showFormattedJson': 'Formatierte JSON anzeigen',
   'chat.toolPart.showNavigableJson': 'Navigierbare JSON anzeigen',
   'chat.toolPart.openFile': 'Datei öffnen',
+  'chat.toolPart.openImageExpanded': 'Öffnen',
   'chat.toolPart.openFileAtFirstChange': 'Datei bei erster Änderung öffnen',
   'chat.toolPart.openFileDiff': 'Datei-Unterschied öffnen',
   'chat.toolPart.copyOutput': 'Ausgabe kopieren',
@@ -3158,6 +3163,7 @@ export const dict = {
   'mainLayout.mobile.closeDrawerAria': 'Drawer schließen',
   'sortableTabsStrip.aria.tabs': 'Tabs',
   'openChamberLogo.aria.logo': 'OpenChamber-Logo',
+  'markdownRenderer.code.proposal': 'Vorschlag',
   'markdownRenderer.code.actions.copyTitle': 'Code kopieren',
   'markdownRenderer.code.actions.copiedTitle': 'Kopiert',
   'markdownRenderer.table.actions.copyTitle': 'Tabelle kopieren',

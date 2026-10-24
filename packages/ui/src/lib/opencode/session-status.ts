@@ -31,8 +31,8 @@ export const hostSessionStatusSnapshotSchema = z.object({
     status: z.string(),
     lastUpdateAt: z.number(),
     // When the session's latest turn began, on the host's clock (`serverTime`
-    // gives "now" on the same clock). Hosts predating the field, and the VS
-    // Code shim, omit it.
+    // gives "now" on the same clock). Hosts predating the field omit it. The
+    // VS Code shim sets it only for a turn its extension host saw begin.
     turnStartedAt: z.number().optional(),
   })),
   // Permission requests and forms the host still sees unanswered, keyed by

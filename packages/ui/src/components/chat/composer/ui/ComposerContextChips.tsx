@@ -78,7 +78,7 @@ const basename = (path: string): string => {
 const PREVIEW_CLOSE_DELAY_MS = 500;
 
 const ENTRY_ACTION_CLASS = 'inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-interactive-hover hover:text-foreground';
-const ENTRY_LABEL_CLASS = 'text-[10px] font-medium uppercase tracking-wide text-muted-foreground opacity-60';
+const ENTRY_LABEL_CLASS = 'text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground opacity-60';
 
 const DraftPreviewEntry: React.FC<{
     draft: InlineCommentDraft;

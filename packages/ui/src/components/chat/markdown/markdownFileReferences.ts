@@ -3,6 +3,7 @@ import { fileReferenceExists, findUniqueFileByName } from '../fileReferenceStat'
 import { isAbsoluteFilePath, isFilePathWithinDirectory, toAbsoluteFilePath } from '@/lib/path-utils';
 import type { ConfirmedCodePath } from './streamdownCode';
 import React from 'react';
+import { useMobileAppActions } from '@/apps/mobileAppContext';
 import { RuntimeAPIContext } from '@/contexts/runtimeAPIContext';
 import { isDesktopLocalOriginActive, openDesktopPath } from '@/lib/desktop';
 import { useUIStore } from '@/stores/useUIStore';
@@ -29,6 +30,7 @@ export function useOpenMarkdownFile() {
   const apis = React.useContext(RuntimeAPIContext);
   const editor = apis?.editor;
   const isVSCode = apis?.runtime.isVSCode;
+  const mobileActions = useMobileAppActions();
   return React.useCallback(async (raw: string, path?: string, external = false) => {
     const reference = resolveMarkdownFile(raw, directory, 'click');
     if (!reference) return;
@@ -38,7 +40,10 @@ export function useOpenMarkdownFile() {
     const ui = useUIStore.getState();
     if (reference.line) ui.openContextFileAtLine(directory, target, reference.line, reference.column ?? 1);
     else ui.openContextFile(directory, target);
-  }, [directory, editor, isVSCode]);
+    // On the phone the viewer lives in the workspace drawer; the staged file
+    // shows only once the drawer is open on Files (#5486).
+    mobileActions?.openFiles();
+  }, [directory, editor, isVSCode, mobileActions]);
 }
 
 const KNOWN_FILE_BASENAMES = new Set(['dockerfile', 'makefile', 'readme', 'license', '.env', '.gitignore', '.npmrc']);

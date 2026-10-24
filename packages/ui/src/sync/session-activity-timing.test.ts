@@ -159,6 +159,20 @@ describe('session activity timing', () => {
     expect(startedAt('ses_a')).toBe(current);
   });
 
+  // The map read was already in flight when this device joined the running
+  // turn. A join is not a new turn, so the read still carries this turn's
+  // start and has to be applied; ignoring it here is what reset a late client
+  // to the moment it attached.
+  test('a host map read starts a turn this device only joined during the read', () => {
+    const requestedAt = Date.now() - 50;
+    snapshot(['ses_a']);
+    expect(startedAt('ses_a')).toBe(undefined);
+
+    const start = host(20 * 60_000);
+    applyHostTurnStarts(new Map([['ses_a', start]]), new Set(), { requestedAt, answeredAt: Date.now() + 1 });
+    expect(startedAt('ses_a')).toBe(start.at);
+  });
+
   // A parent idling while its background subagent works: this device sees the
   // subagent, the host knows when the parent's turn began.
   test('a host start begins the turn of a session held open here', () => {

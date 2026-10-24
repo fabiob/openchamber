@@ -62,7 +62,7 @@ bun packages/sdk/scripts/bundle-guest.ts packages/sdk/examples/browser-provider-
 bun packages/sdk/scripts/bundle-guest.ts --node packages/sdk/examples/source-control-provider/service/main.ts packages/sdk/examples/source-control-provider/service/main.js
 ```
 
-Rebuild all panels after editing `shared.ts` or the SDK. Commit built files with the extension; installation never builds source or installs dependencies. Bump the extension's own version when publishing an update through Git.
+Rebuild all panels after editing `shared.ts` or the SDK. Commit built files with the extension; installation never builds source or installs dependencies. Bump the extension's own version when publishing an update through Git. A Bun upgrade also invalidates every panel bundle, because the minifier assigns different identifier names; regenerate them with the Bun version the repository pins in `package.json`.
 
 ## Check
 

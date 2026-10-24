@@ -1,8 +1,7 @@
 # Catches anything that breaks the flake's evaluation before merge: a PR
 # touching the flake (or packages/electron/package.json, whose Electron
-# devDependency the desktop package reads at eval time) must still evaluate
-# every package. Real builds live in nix-build.yml, keyed to bake PRs and
-# flake-structure PRs via its paths filter.
+# devDependency and opencodeCli.version the flake reads at eval time) must
+# still evaluate every package. Read-only: no builds, no cache, no write permissions.
 name: nix-eval
 
 on:

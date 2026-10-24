@@ -12,6 +12,7 @@ import { getProviderModelDisplayName } from '@/lib/modelDisplay';
 import { useSessionUIStore } from '@/sync/session-ui-store';
 import { isVSCodeRuntime } from '@/lib/desktop';
 import { normalizePath } from '@/lib/pathNormalization';
+import { spaceIdOfDirectory } from '@/lib/spaces/space-route';
 import { WorkStatusCollapsibleSection, WorkStatusRow, WorkStatusValue } from './WorkStatusPrimitives';
 import { useReportWorkStatusPresence } from './presenceContext';
 import { formatCost } from './subagentCost';
@@ -120,6 +121,7 @@ export const WorkStatusSubagentsSection: React.FC<Props> = ({ sessionId, directo
     if (id && observed) observedById.set(id, observed);
   }
   const panelDirectory = normalizePath(directory);
+  const panelSpaceId = spaceIdOfDirectory(panelDirectory);
   const rows = children.map((child) => {
     const blocked = (permissions[child.id]?.length ?? 0) > 0;
     const asked = (forms[child.id]?.length ?? 0) > 0;
@@ -127,11 +129,11 @@ export const WorkStatusSubagentsSection: React.FC<Props> = ({ sessionId, directo
     const observed = observedById.get(child.id);
     const busy = status === 'busy' || status === 'retry' || (!status && observed === 'busy');
     const failed = !busy && observed === 'failed';
-    // The snapshot only speaks for its own directory. Paths are compared
-    // normalized: OpenCode may report a child's directory with a trailing
-    // slash or Windows separators the panel's directory does not have.
+    // The snapshot is the server's list of running sessions: the host's for
+    // every host directory, a space's own for that space. So it also speaks
+    // for a child that moved to another worktree, never across that boundary.
     const snapshotCovers = statusReady === true && !statusInvalidated?.[child.id]
-      && panelDirectory !== null && normalizePath(child.directory) === panelDirectory;
+      && panelDirectory !== null && spaceIdOfDirectory(normalizePath(child.directory)) === panelSpaceId;
     const done = !failed && !busy && (status === 'idle' || (!status && (snapshotCovers || observed === 'settled')));
     const finished = !blocked && !asked && (done || failed);
     // Blockers first, then running rows, then rows whose status is not known

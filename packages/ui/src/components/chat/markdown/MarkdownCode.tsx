@@ -16,6 +16,7 @@ import { useI18n } from '@/lib/i18n';
 import { useMarkdownPresentation } from './MarkdownPresentationContext';
 import { activateMarkdownFile, useOpenMarkdownFile } from './markdownFileReferences';
 import type { MarkdownCodePlugin } from './streamdownCode';
+import { MarkdownDiff } from './MarkdownDiff';
 
 // Complete prefix rows keep their identity in the worker client, so appending
 // code only renders changed rows. React owns every node; no HTML patching.
@@ -120,6 +121,7 @@ export function MarkdownCode({ children, className, node, ...props }: React.Comp
   }, []);
 
   const language = /language-([^\s]+)/.exec(className ?? '')?.[1] ?? '';
+  const proposal = language.toLowerCase() === 'diff';
   const code = node?.children.map((child) => child.type === 'text' ? child.value : '').join('') ?? '';
   const copySource = code.replace(/\n$/, '');
   const { purpose, onExportCode } = presentation;
@@ -160,14 +162,14 @@ export function MarkdownCode({ children, className, node, ...props }: React.Comp
       onKeyDown={handleFileClick}
     >
       <CodeBlockContainer language={language} isIncomplete={incomplete} dir="ltr">
-        <CodeBlockHeader language={language.toLowerCase() || 'text'} />
+        <CodeBlockHeader language={proposal ? t('markdownRenderer.code.proposal') : language.toLowerCase() || 'text'} />
         {!purpose && (
           <div className="pointer-events-none absolute top-0 end-0 flex items-center">
             <div
               data-streamdown="code-block-actions"
               className="pointer-events-auto flex shrink-0 items-center gap-2 rounded-md border border-sidebar bg-sidebar/80 px-1.5 py-1 supports-[backdrop-filter]:bg-sidebar/70 supports-[backdrop-filter]:backdrop-blur"
             >
-              <Button
+              {!proposal && <Button
                 variant="ghost"
                 size="xs"
                 data-export-ignore
@@ -176,7 +178,7 @@ export function MarkdownCode({ children, className, node, ...props }: React.Comp
                 onClick={() => useUIStore.getState().setCodeBlockLineWrap(!wrap)}
               >
                 <Icon name="text-wrap" className="size-3.5" />
-              </Button>
+              </Button>}
               <Button
                 variant="ghost"
                 size="xs"
@@ -189,12 +191,12 @@ export function MarkdownCode({ children, className, node, ...props }: React.Comp
             </div>
           </div>
         )}
-        <MarkdownCodeBody
+        {proposal && !purpose ? <MarkdownDiff source={copySource} incomplete={incomplete} /> : <MarkdownCodeBody
           source={copySource}
           language={language}
           incomplete={incomplete}
           plugin={presentation.code}
-        />
+        />}
       </CodeBlockContainer>
     </div>
   );

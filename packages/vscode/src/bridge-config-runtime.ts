@@ -63,7 +63,8 @@ import {
 } from './opencodeConfig';
 import { parseWebSearchSelection, skillSwitchRequestSchema } from './opencode-config-v2';
 import {
-  getSkillsCatalog,
+  getSkillsCatalogSourceItems,
+  getSkillsCatalogSources,
   scanSkillsRepository as scanSkillsRepositoryFromGit,
   installSkillsFromRepository as installSkillsFromGit,
   type SkillsCatalogSourceConfig,
@@ -731,12 +732,19 @@ export async function handleConfigBridgeMessage(
     }
 
     case 'api:config/skills:catalog': {
-      const refresh = Boolean((payload as { refresh?: boolean } | undefined)?.refresh);
+      const sources = getSkillsCatalogSources(parseSkillsCatalogSources(deps.readSettings(ctx)));
+      return { id, type, success: true, data: { ok: true, sources, itemsBySource: {} } };
+    }
+
+    case 'api:config/skills:catalog/source': {
+      const { sourceId, refresh } = (payload || {}) as { sourceId?: string; refresh?: boolean };
       const workingDirectory = ctx?.manager?.getWorkingDirectory() || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      const settings = deps.readSettings(ctx);
-      const additionalSources = parseSkillsCatalogSources(settings);
-      const installedSkills = await resolveDiscoveredSkills(deps, ctx, workingDirectory);
-      const data = await getSkillsCatalog(workingDirectory, refresh, additionalSources, installedSkills);
+      const data = await getSkillsCatalogSourceItems({
+        sourceId: String(sourceId || ''),
+        refresh: refresh === true,
+        additionalSources: parseSkillsCatalogSources(deps.readSettings(ctx)),
+        installedSkills: await resolveDiscoveredSkills(deps, ctx, workingDirectory),
+      });
       return { id, type, success: true, data };
     }
 

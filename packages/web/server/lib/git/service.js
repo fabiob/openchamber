@@ -592,13 +592,16 @@ const isInsideOrSameDirectory = (root, target) => {
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 };
 
-const resolveGitRepositoryRoot = async (directoryPath, git) => {
-  const topLevel = await git.raw(['rev-parse', '--show-toplevel']);
+const toRepositoryRoot = (directoryPath, topLevel) => {
   const normalizedTopLevel = normalizeGitOutputPath(topLevel.trim());
   return path.isAbsolute(normalizedTopLevel)
     ? path.resolve(normalizedTopLevel)
     : path.resolve(directoryPath, normalizedTopLevel);
 };
+
+const resolveGitRepositoryRoot = async (directoryPath, git) => (
+  toRepositoryRoot(directoryPath, await git.raw(['rev-parse', '--show-toplevel']))
+);
 
 const createRepositoryGitContext = async (directory, gitOptions = {}) => {
   const directoryPath = normalizeDirectoryPath(directory);
@@ -2520,27 +2523,36 @@ const applyUpstreamConfiguration = async (args) => {
 
 const warnedUnsupportedRoots = new Set();
 
-export async function isGitRepository(directory) {
-  const directoryPath = normalizeDirectoryPath(directory);
+// Whether `directoryPath` is in a supported repository, and where its working
+// tree starts. One process answers both: in the desktop app every Git process
+// is forked from the Electron main process, and a status read asks this first.
+// `repoRoot` is null inside a bare repository or a .git directory, where Git
+// prints the git dir and then fails on `--show-toplevel`; those still count
+// as repositories.
+const probeRepository = async (directoryPath) => {
+  const notRepository = { isRepository: false, repoRoot: null };
   if (!directoryPath || !fs.existsSync(directoryPath)) {
-    return false;
+    return notRepository;
   }
 
-  const result = await runGitCommand(directoryPath, ['rev-parse', '--git-dir'], { timeoutMs: GIT_PROBE_TIMEOUT_MS });
-  if (!result.success) return false;
+  const result = await runGitCommand(directoryPath, ['rev-parse', '--git-dir', '--show-toplevel'], { timeoutMs: GIT_PROBE_TIMEOUT_MS });
+  const [gitDir = '', topLevel = ''] = result.stdout.split(/\r?\n/).map((line) => line.trim());
+  if (!gitDir) return notRepository;
+  if (!result.success) return { isRepository: true, repoRoot: null };
 
-  // `--show-toplevel` has no answer inside a bare repository or a .git
-  // directory; those keep the previous answer rather than being rejected.
-  const topLevel = await runGitCommand(directoryPath, ['rev-parse', '--show-toplevel'], { timeoutMs: GIT_PROBE_TIMEOUT_MS });
-  if (!topLevel.success) return true;
-  const repoRoot = topLevel.stdout.trim();
-  const reason = unsupportedRepositoryRootReason(repoRoot);
-  if (!reason) return true;
-  if (!warnedUnsupportedRoots.has(repoRoot)) {
-    warnedUnsupportedRoots.add(repoRoot);
-    console.warn(`[git] Ignoring repository rooted at ${repoRoot} (${reason}): Git features are disabled for ${directoryPath}`);
+  const reason = unsupportedRepositoryRootReason(topLevel);
+  if (!reason) {
+    return { isRepository: true, repoRoot: topLevel ? toRepositoryRoot(directoryPath, topLevel) : null };
   }
-  return false;
+  if (!warnedUnsupportedRoots.has(topLevel)) {
+    warnedUnsupportedRoots.add(topLevel);
+    console.warn(`[git] Ignoring repository rooted at ${topLevel} (${reason}): Git features are disabled for ${directoryPath}`);
+  }
+  return notRepository;
+};
+
+export async function isGitRepository(directory) {
+  return (await probeRepository(normalizeDirectoryPath(directory))).isRepository;
 }
 
 export async function getGlobalIdentity() {
@@ -2991,14 +3003,16 @@ async function readStatus(normalizedDirectory, lightMode) {
   try {
     // Prefer an explicit non-repo check before simple-git status so a missing
     // repository never depends on process.cwd() or an opaque GitError shape.
-    if (!(await isGitRepository(normalizedDirectory))) {
+    // The same probe names the repository root, so the read does not ask again.
+    const repository = await probeRepository(normalizedDirectory);
+    if (!repository.isRepository) {
       throw new Error('fatal: not a git repository (or any of the parent directories): .git');
     }
 
-    const { directoryPath, repoRoot, git } = await createRepositoryGitContext(normalizedDirectory, {
-      stallTimeoutMs: GIT_STATUS_STALL_TIMEOUT_MS,
-      optionalLocks: false,
-    });
+    const gitOptions = { stallTimeoutMs: GIT_STATUS_STALL_TIMEOUT_MS, optionalLocks: false };
+    const { directoryPath, repoRoot, git } = repository.repoRoot
+      ? { directoryPath: normalizedDirectory, repoRoot: repository.repoRoot, git: await createGit(repository.repoRoot, gitOptions) }
+      : await createRepositoryGitContext(normalizedDirectory, gitOptions);
 
     // `-unormal` lists a directory with no tracked files as one `dir/` entry
     // and stops walking it at its first file. `-uall` would walk every file
@@ -3215,23 +3229,25 @@ async function readStatus(normalizedDirectory, lightMode) {
       upstreamComparison = await getRemoteBranchComparison(git, 'upstream', status.current);
     }
 
-    // Check for in-progress operations
+    // Check for in-progress operations. One `--git-path` call locates every
+    // marker, and the markers themselves are plain files: MERGE_HEAD is always
+    // a file in the git dir, whatever the ref storage.
     let mergeInProgress = null;
     let rebaseInProgress = null;
+    const [mergeHeadPath = '', mergeMsgPath = '', rebaseMergePath = '', rebaseApplyPath = ''] = await git
+      .raw(['rev-parse', '--git-path', 'MERGE_HEAD', '--git-path', 'MERGE_MSG', '--git-path', 'rebase-merge', '--git-path', 'rebase-apply'])
+      .then((value) => String(value || '').split(/\r?\n/).slice(0, 4).map((line) => (
+        line.trim() ? path.resolve(repoRoot, normalizeGitOutputPath(line.trim())) : ''
+      )))
+      .catch(() => []);
+    const pathExists = (target) => (target ? fsp.stat(target).then(() => true).catch(() => false) : false);
 
     try {
-      // Check MERGE_HEAD for merge in progress
-      const mergeHeadExists = await git
-        .raw(['rev-parse', '--verify', '--quiet', 'MERGE_HEAD'])
-        .then(() => true)
-        .catch(() => false);
-      
-      if (mergeHeadExists) {
+      if (await pathExists(mergeHeadPath)) {
         const mergeHead = await git.raw(['rev-parse', 'MERGE_HEAD']).catch(() => '');
         const headSha = mergeHead.trim().slice(0, 7);
         // Only set mergeInProgress if we actually have a valid head SHA
         if (headSha) {
-          const mergeMsgPath = await resolveGitInternalPath(repoRoot, git, 'MERGE_MSG').catch(() => '');
           const mergeMsg = mergeMsgPath ? await fsp.readFile(mergeMsgPath, 'utf8').catch(() => '') : '';
           mergeInProgress = {
             head: headSha,
@@ -3245,10 +3261,8 @@ async function readStatus(normalizedDirectory, lightMode) {
 
     try {
       // Check for rebase in progress (.git/rebase-merge or .git/rebase-apply)
-      const rebaseMergePath = await resolveGitInternalPath(repoRoot, git, 'rebase-merge').catch(() => '');
-      const rebaseApplyPath = await resolveGitInternalPath(repoRoot, git, 'rebase-apply').catch(() => '');
-      const rebaseMergeExists = rebaseMergePath ? await fsp.stat(rebaseMergePath).then(() => true).catch(() => false) : false;
-      const rebaseApplyExists = rebaseApplyPath ? await fsp.stat(rebaseApplyPath).then(() => true).catch(() => false) : false;
+      const rebaseMergeExists = await pathExists(rebaseMergePath);
+      const rebaseApplyExists = await pathExists(rebaseApplyPath);
       
       if (rebaseMergeExists || rebaseApplyExists) {
         const rebasePath = rebaseMergeExists ? rebaseMergePath : rebaseApplyPath;
@@ -4481,6 +4495,27 @@ export async function commit(directory, message, options = {}) {
 }
 
 /**
+ * On a detached HEAD, `git branch` prints `(HEAD detached at v2.1.3)` and
+ * simple-git lists it as a branch named after the tag or commit. Picking that
+ * name in the branch selector checks out the same tag again, so the user can
+ * never get back onto a branch through it. Git prints the detached line first,
+ * so dropping the first occurrence of the name keeps a real branch that shares
+ * it, and the details map already holds that branch's later entry.
+ */
+const withoutDetachedHeadEntry = (summary) => {
+  if (!summary.detached) {
+    return { all: summary.all, branches: summary.branches };
+  }
+  const index = summary.all.indexOf(summary.current);
+  const all = summary.all.filter((_, entryIndex) => entryIndex !== index);
+  const branches = { ...summary.branches };
+  if (!all.includes(summary.current)) {
+    delete branches[summary.current];
+  }
+  return { all, branches };
+};
+
+/**
  * `remote: 'local'` answers from local refs alone, as `git branch -a` does: the
  * callers that only need the checked-out branch and its upstream (publishing,
  * worktree creation) must not wait on every remote's network round trip.
@@ -4490,8 +4525,7 @@ export async function getBranches(directory, { remote = 'live' } = {}) {
 
   try {
     const result = await git.branch();
-
-    const allBranches = result.all;
+    const { all: allBranches, branches } = withoutDetachedHeadEntry(result);
     const remoteBranches = allBranches.filter(branch => branch.startsWith('remotes/'));
     // Read-only ref discovery, not a transfer: it never writes refs and never
     // takes the planned-operation path, so a branch pushed from elsewhere is
@@ -4507,7 +4541,7 @@ export async function getBranches(directory, { remote = 'live' } = {}) {
         ...activeRemoteBranches,
       ],
       current: result.current,
-      branches: result.branches,
+      branches,
       defaultBranches,
     };
   } catch (error) {

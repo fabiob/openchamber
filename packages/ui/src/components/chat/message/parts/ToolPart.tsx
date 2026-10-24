@@ -128,6 +128,8 @@ interface ToolPartProps {
     alwaysShowActions?: boolean;
     onShowPopup?: (content: ToolPopupContent) => void;
     animateTailText?: boolean;
+    /** Why a failed row failed, shown while it stays collapsed. Only `!command` rows pass one. */
+    failureReason?: string;
 }
 
 // A finished run shows tenths; a running one counts whole seconds on the
@@ -1587,6 +1589,7 @@ const ToolPartContent: React.FC<ToolPartProps & { header?: ToolRowHeader; subage
     isMobile,
     onShowPopup,
     animateTailText = true,
+    failureReason,
     header,
     subagentSessionId: taskSessionId,
 }) => {
@@ -1747,7 +1750,10 @@ const ToolPartContent: React.FC<ToolPartProps & { header?: ToolRowHeader; subage
     );
     const description = guestHeader?.subtitle ?? builtInDescription;
     const displayName = guestHeader?.title ?? getToolMetadata(normalizedPartTool || part.tool).displayName;
-    
+
+    // Opened, the body already carries the whole error and output.
+    const failureDetail = isError && !isExpanded ? failureReason : undefined;
+
     // Tool title/description — shown inline as context. A subtitle the
     // extension declared replaces it, since both land in the same slot.
     const guestSubtitle = guestHeader?.subtitle ?? null;
@@ -2072,6 +2078,19 @@ const ToolPartContent: React.FC<ToolPartProps & { header?: ToolRowHeader; subage
                                     </Text>
                                 )
                             )}
+                            {failureDetail ? (
+                                <>
+                                    {justificationText || description ? (
+                                        <span aria-hidden="true" className="flex-shrink-0 text-muted-foreground/60">·</span>
+                                    ) : null}
+                                    <span
+                                        className={cn('max-w-[50%] flex-shrink-0 truncate text-[var(--status-error)]', TOOL_ROW_DESCRIPTION_CLASS)}
+                                        title={failureDetail}
+                                    >
+                                        {failureDetail}
+                                    </span>
+                                </>
+                            ) : null}
                             {diffStats && (
                                 <span className="flex-shrink-0 inline-flex items-center gap-0 typography-meta" style={{ fontSize: '0.8rem', lineHeight: '1' }}>
                                     <span style={{ color: 'var(--status-success)' }}>+{diffStats.added}</span>
@@ -2344,5 +2363,6 @@ export default React.memo(ToolPart, (prev, next) => {
         && prev.isMobile === next.isMobile
         && prev.alwaysShowActions === next.alwaysShowActions
         && prev.onShowPopup === next.onShowPopup
-        && prev.animateTailText === next.animateTailText;
+        && prev.animateTailText === next.animateTailText
+        && prev.failureReason === next.failureReason;
 });

@@ -30,13 +30,13 @@ import { countSyncPerformance } from './performance-diagnostics';
 //   itself (`lib/sessionTurnMetadata.ts`), and that record is what a row shows
 //   after a reload, while the session stays unread.
 //
-// A persisted start is a lookup table, never a claim of activity. Nothing in
-// the protocol marks where a turn begins: the server calls `SessionStatus.set`
-// with `busy` at every step of the agent loop and publishes an event each time,
-// so a busy event means "still running", not "just started" — it cannot be read
-// as a turn boundary, and reading it that way reset every counter on reload,
-// because after a refresh one of those repeats almost always beats the first
-// status snapshot.
+// A persisted start is a lookup table, never a claim of activity. A busy
+// status does not mark where a turn begins: the server calls
+// `SessionStatus.set` with `busy` at every step of the agent loop and publishes
+// an event each time, so a busy event means "still running", not "just
+// started" — it cannot be read as a turn boundary, and reading it that way
+// reset every counter on reload, because after a refresh one of those repeats
+// almost always beats the first status snapshot.
 //
 // Turn *ends* are marked: `session.idle` and `session.error` events fire once,
 // live, and retire the persisted record. Starts are marked too, but only by
@@ -140,7 +140,7 @@ const startUnknown = new Set<string>();
 const askedHost = new Set<string>();
 /** Turns this device keeps open through an idle session's background work. */
 const heldTurns = new Set<string>();
-/** When each running turn began on this device, to tell a host answer that predates it. */
+/** When this device learned a running turn's start, to tell a host answer that predates it. */
 const turnBeganAt = new Map<string, number>();
 let hostTurnStartRequester: (() => void) | null = null;
 
@@ -180,7 +180,10 @@ const beginTurn = (
   restored: ReadonlyMap<string, PersistedStart>,
 ): void => {
   const at = turnStart?.at ?? restored.get(sessionId)?.start;
-  turnBeganAt.set(sessionId, Date.now());
+  // Only a start this device learned can make a host read that overlaps it
+  // stale. A session this device merely joined from a status snapshot began
+  // before the read, so the read still describes that turn.
+  if (turnStart) turnBeganAt.set(sessionId, Date.now());
   if (at === undefined) startUnknown.add(sessionId);
   else pass.draftStarted().set(sessionId, at);
   if (turnStart?.source === 'host') {
@@ -584,12 +587,15 @@ export const removeSessionActivityTiming = (sessionId: string): void => {
 
 /**
  * Starts read from the host's status map, already on this device's clock.
- * A session in a turn here takes its start, unless its turn began on this
- * device while the map was being read (`requestedAt` to `answeredAt`): the map
- * then describes the turn before it. `heldHere` names sessions the host
- * reports idle while this device sees their turn kept open by a subagent or a
- * background command: their turn begins here with the host's last start, since
- * nothing else on this device would ever start counting it.
+ * A session in a turn here takes its start, unless this device learned the
+ * start of a newer turn while the map was being read (`requestedAt` to
+ * `answeredAt`): the map then describes the turn before it. A session this
+ * device only joined from a status snapshot is not such a turn, because the
+ * map still describes the turn that was already running. `heldHere` names
+ * sessions the host reports idle while this device sees their turn kept open
+ * by a subagent or a background command: their turn begins here with the
+ * host's last start, since nothing else on this device would ever start
+ * counting it.
  */
 export const applyHostTurnStarts = (
   starts: ReadonlyMap<string, SessionTurnStart>,

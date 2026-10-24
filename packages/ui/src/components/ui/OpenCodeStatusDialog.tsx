@@ -11,6 +11,7 @@ import { useUIStore } from '@/stores/useUIStore';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import { OpenCodeHeapSnapshot } from '@/components/ui/OpenCodeHeapSnapshot';
 
 export const OpenCodeStatusDialog: React.FC = () => {
   const { t } = useI18n();
@@ -65,6 +66,8 @@ export const OpenCodeStatusDialog: React.FC = () => {
         <pre className="max-h-[60vh] overflow-auto rounded-lg bg-surface-muted p-4 typography-code text-foreground whitespace-pre-wrap">
           {openCodeStatusText || t('openCodeStatusDialog.empty.noData')}
         </pre>
+
+        <OpenCodeHeapSnapshot />
       </DialogContent>
     </Dialog>
   );

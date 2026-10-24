@@ -717,7 +717,9 @@ export const PlanView: React.FC<PlanViewProps> = ({ visible = true, savedProject
         // Oversized objectives (huge plans) are distilled into audit
         // criteria inside setSessionGoal — the shared path for every goal
         // source. Here we only compose header + full content.
-        const goalObjective = execution.runAsGoal === true
+        // Improve stops before implementation, so only Implement runs as a goal.
+        const runAsGoal = pendingPlanSend.action === 'implement' && execution.runAsGoal === true;
+        const goalObjective = runAsGoal
           ? [
               `Implement the plan "${sendPromptTitle}" end-to-end${planFilePath ? ` (plan file: ${planFilePath})` : ' (the full plan follows)'}.`,
               planFilePath
@@ -727,7 +729,7 @@ export const PlanView: React.FC<PlanViewProps> = ({ visible = true, savedProject
               content,
             ].join('\n')
           : null;
-        useSessionGoalArmStore.getState().setArmed(execution.runAsGoal === true, goalObjective);
+        useSessionGoalArmStore.getState().setArmed(runAsGoal, goalObjective);
         await sendMessage(
           visiblePrompt,
           execution.providerID,
@@ -922,7 +924,7 @@ export const PlanView: React.FC<PlanViewProps> = ({ visible = true, savedProject
         target={pendingPlanSend?.target ?? 'session'}
         projectDirectory={savedPlanProjectRef?.path ?? currentProjectRef?.path ?? null}
         submitting={isPlanSendSubmitting}
-        allowRunAsGoal
+        allowRunAsGoal={pendingPlanSend?.action === 'implement'}
         onConfirm={handleConfirmPlanSend}
       />
 

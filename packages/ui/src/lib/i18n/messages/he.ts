@@ -15,6 +15,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -28,6 +29,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict = {
   'opencodeCompatibility.bundled': 'OpenCode מגיע יחד עם OpenChamber. יש לעדכן את OpenChamber כדי לקבל את OpenCode v2.',
@@ -2655,6 +2657,7 @@ export const dict = {
   'chat.toolPart.showFormattedJson': 'הצג JSON מעוצב',
   'chat.toolPart.showNavigableJson': 'הצג JSON עם ניווט',
   'chat.toolPart.openFile': 'פתח קובץ',
+  'chat.toolPart.openImageExpanded': 'פתח',
   'chat.toolPart.openFileAtFirstChange': 'פתח את הקובץ בשינוי הראשון',
   'chat.toolPart.openFileDiff': 'פתח את הבדלי הקובץ',
   'chat.toolPart.copyOutput': 'העתק פלט',
@@ -3389,6 +3392,7 @@ export const dict = {
   'mainLayout.mobile.closeDrawerAria': 'סגור את המגירה',
   'sortableTabsStrip.aria.tabs': 'כרטיסיות',
   'openChamberLogo.aria.logo': 'הלוגו של OpenChamber',
+  'markdownRenderer.code.proposal': 'הצעה',
   'markdownRenderer.code.actions.copyTitle': 'העתק קוד',
   'markdownRenderer.code.actions.copiedTitle': 'הועתק',
   'markdownRenderer.table.actions.copyTitle': 'העתק טבלה',
@@ -3814,6 +3818,7 @@ export const dict = {
   ...usageStatsI18n.he,
   ...webSearchI18n.he,
   ...sessionWarmingI18n.he,
+  ...heapSnapshotI18n.he,
   ...overviewI18n.he,
   ...isolatedSpacesI18n.he,
   ...sourceBoardI18n.he,
@@ -3827,6 +3832,7 @@ export const dict = {
   ...pluginsGridI18n.he,
   ...integrationsCatalogI18n['he'],
   ...diffFindI18n['he'],
+  ...guestStatusViewI18n['he'],
   'settings.usage.page.state.claudeSignedOutTitle': 'לא מחובר ל-Claude Code',
   'settings.usage.page.state.claudeSignInCommand': 'יש להריץ את הפקודה הזו במסוף:',
   'settings.openchamber.visual.field.confirmFileTreeMove': 'אישור לפני העברת קבצים',

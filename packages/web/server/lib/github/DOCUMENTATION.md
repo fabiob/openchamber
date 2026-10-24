@@ -54,6 +54,7 @@ GitHub sits on the shared source-control route shell (`../source-control/provide
 - `getOctokitOrNull(host)`: current Octokit, targeting the given Enterprise host when provided, or `null`. Caches and rate-limit cooldowns key off this host so one instance never leaks data or failures into another. Refuses (returns `null`) a host the server never authenticated with before any token lookup — see "Host trust" below.
 - `getOctokitForAccountId(accountId)`: exact persisted or verified CLI Octokit context with credential revision and provider-user identity. It never falls back to another account. A `github.com#cli:` id resolves only while the user has switched to the gh account (`isGhCliActive()`), and a `<host>#cli:` id only while that enterprise instance's gh login is active; otherwise both resolve to nothing, never to a credential stored for the host, so a canonical mutation answers 401 `SOURCE_CONTROL_ACCOUNT_UNAVAILABLE` instead of running as someone else. The gh token is otherwise read only to list the gh account in Settings.
 - `getGitHubCliCredential(accountId, revision?)`: the same gh account as a credential record shaped like a persisted one (`credentialId`, `credentialRevision: 1`, `providerUserId`, `accessToken`, `status: 'valid'`), under the same consent rule plus a check that gh is still signed in as that user. The server's source-control account resolver falls back to it after `getGitHubAuthByAccountId`, so Git transport (fork PR worktrees, managed clones, the credential helper) accepts the gh account that reads already use.
+- `getGhCliToken(host)` (`gh-cli-credential.js`): the gh token for a host, `GH_HOST` pinned to it. gh's answer is reused per host until gh's `hosts.yml` changes (stat of the file in gh's own config dir), 5 minutes pass for a token or 30 seconds for "no token", or GitHub answers `401` to that token (`createOctokit` calls `forgetGhCliToken`). Concurrent callers share one gh run. A run that gave no answer (gh missing, failed to start, timed out) is never reused; gh exiting non-zero is its answer "no token".
 
 ### Repo
 
@@ -263,6 +264,10 @@ The shell holds sessions as plain JSON (`instance`, `accountId`, credential revi
 ### Why the pull request context cache is GitHub's and not the shell's
 
 The checks view, the comments view and send-to-chat ask for the same pull request context within seconds, and a GitHub context costs five or more REST calls. GitLab's context has no cache and its documentation promises none, so a shell-wide context cache would change GitLab; the 30 s cache lives in `resources.js`, and successful mutations drop their target's entries through `mutations.afterSuccess`. The status cache, which every provider needs the same way, is the shell's.
+
+### Why the gh token is reused until hosts.yml changes
+
+Every Octokit for a gh account, every Settings status read and every Git credential lookup asks for the gh token, and reading it on each use started a `gh` process per request (issue 5482). A plain time limit would keep serving a token for up to its length after `gh auth login`, `logout` or `switch`. gh rewrites `hosts.yml` on each of these, so its stat ends the reuse at once, and the 5 minute limit and the `401` drop cover a token that changed where `hosts.yml` does not show it. A run without an answer is not reused, so installing gh or a passing hang is picked up on the next read. "No token" is kept 30 seconds only: gh exits non-zero for a locked keyring as well as for a logout, and unlocking the keyring leaves `hosts.yml` alone.
 
 ### Why live summaries fall back to the host's current account
 

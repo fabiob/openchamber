@@ -269,6 +269,14 @@ describe('parseGuestCatalogJson', () => {
     expect(readGuests(JSON.stringify({ guests: [{ ...row, statusEntry: 'status/index.html', statusHeight: 4000 }] }))).toBeNull();
   });
 
+  test('keeps a source status section and refuses a path or interval the SDK would not', () => {
+    const row = { id: 'monitor', name: 'Monitor', icon: 'pulse', capabilities: { requested: [], granted: [] } };
+    const statusSource = { path: '/status', interval: 2000 };
+    expect(readGuests(JSON.stringify({ guests: [{ ...row, statusSource }] }))).toEqual([{ ...row, statusSource }]);
+    expect(readGuests(JSON.stringify({ guests: [{ ...row, statusSource: { path: 'status', interval: 2000 } }] }))).toBeNull();
+    expect(readGuests(JSON.stringify({ guests: [{ ...row, statusSource: { path: '/status', interval: 10 } }] }))).toBeNull();
+  });
+
   test('keeps bounded storage and status metadata', () => {
     const row = { id: 'git-graph', name: 'Git graph', icon: 'git-commit', capabilities: { requested: [], granted: [] } };
     const storageId = '123e4567-e89b-12d3-a456-426614174000';

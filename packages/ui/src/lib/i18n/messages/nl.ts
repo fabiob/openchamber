@@ -15,6 +15,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -28,6 +29,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict = {
   "opencodeCompatibility.bundled": "OpenCode is inbegrepen bij OpenChamber. Werk OpenChamber bij om OpenCode v2 te krijgen.",
@@ -154,6 +156,7 @@ export const dict = {
   ...usageStatsI18n.nl,
   ...webSearchI18n.nl,
   ...sessionWarmingI18n.nl,
+  ...heapSnapshotI18n.nl,
   ...overviewI18n.nl,
   ...isolatedSpacesI18n.nl,
   ...sourceBoardI18n.nl,
@@ -167,6 +170,7 @@ export const dict = {
   ...pluginsGridI18n.nl,
   ...integrationsCatalogI18n['nl'],
   ...diffFindI18n['nl'],
+  ...guestStatusViewI18n['nl'],
   'terminalView.actions.attachSelection': 'Geselecteerde uitvoer toevoegen',
   'terminalView.actions.copySelection': 'Geselecteerde uitvoer kopiëren',
   'terminalView.toast.selectionCopied': 'Uitvoer gekopieerd',
@@ -2714,6 +2718,7 @@ export const dict = {
    'chat.toolPart.showFormattedJson': 'Opgemaakte JSON tonen',
    'chat.toolPart.showNavigableJson': 'Navigeerbare JSON tonen',
    'chat.toolPart.openFile': 'Bestand openen',
+   'chat.toolPart.openImageExpanded': 'Openen',
    'chat.toolPart.openFileAtFirstChange': 'Bestand openen bij eerste wijziging',
    'chat.toolPart.openFileDiff': 'Bestandsdiff openen',
   'chat.toolPart.copyOutput': 'Uitvoer kopiëren',
@@ -3445,6 +3450,7 @@ export const dict = {
   'mainLayout.mobile.closeDrawerAria': 'Mobiel paneel sluiten',
   'sortableTabsStrip.aria.tabs': 'Tabbladen',
   'openChamberLogo.aria.logo': 'OpenChamber-logo',
+  'markdownRenderer.code.proposal': 'Voorstel',
   'markdownRenderer.code.actions.copyTitle': 'Code kopiëren',
   'markdownRenderer.code.actions.copiedTitle': 'Gekopieerd',
   'markdownRenderer.table.actions.copyTitle': 'Tabel kopiëren',

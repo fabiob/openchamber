@@ -4,7 +4,7 @@ import path from 'path';
 
 import { assertGitAvailable, looksLikeAuthError, runGit } from './git.js';
 import { parseSkillRepoSource } from './source.js';
-import { removeDirectory } from './remove-directory.js';
+import { removeDirectory, removeStaleCatalogFolders } from './remove-directory.js';
 import { OPENCODE_CONFIG_DIR } from '../opencode/shared.js';
 
 const SKILL_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
@@ -214,6 +214,7 @@ export async function installSkillsFromRepository({
     };
   }
 
+  void removeStaleCatalogFolders();
   const tempBase = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'openchamber-skills-install-'));
 
   try {

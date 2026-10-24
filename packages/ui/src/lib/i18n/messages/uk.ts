@@ -16,6 +16,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -29,6 +30,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict: Record<I18nKey, string> = {
   "opencodeCompatibility.bundled": "OpenCode входить до складу OpenChamber. Оновіть OpenChamber, щоб отримати OpenCode v2.",
@@ -165,6 +167,7 @@ export const dict: Record<I18nKey, string> = {
   ...usageStatsI18n.uk,
   ...webSearchI18n.uk,
   ...sessionWarmingI18n.uk,
+  ...heapSnapshotI18n.uk,
   ...overviewI18n.uk,
   ...isolatedSpacesI18n.uk,
   ...sourceBoardI18n.uk,
@@ -178,6 +181,7 @@ export const dict: Record<I18nKey, string> = {
   ...pluginsGridI18n.uk,
   ...integrationsCatalogI18n['uk'],
   ...diffFindI18n['uk'],
+  ...guestStatusViewI18n['uk'],
   'terminalView.actions.attachSelection': 'Прикріпити вибраний вивід',
   'terminalView.actions.copySelection': 'Скопіювати вибраний вивід',
   'terminalView.toast.selectionCopied': 'Вивід скопійовано',
@@ -2645,6 +2649,7 @@ export const dict: Record<I18nKey, string> = {
   "chat.statusRow.background.action": "Перенести у фон — агент перестане чекати й продовжить",
   "chat.statusRow.background.failed": "Не вдалося перенести роботу у фон",
   "chat.toolPart.background.label": "у фоні",
+  "chat.toolPart.openImageExpanded": "Відкрити",
   "chat.toolPart.subagent.stop": "Зупинити сабагента",
   "chat.toolPart.subagent.stopFailed": "Не вдалося зупинити сабагента",
   "chat.toolPart.background.stop": "Зупинити команду",
@@ -3402,6 +3407,7 @@ export const dict: Record<I18nKey, string> = {
   "mainLayout.mobile.closeDrawerAria": "Закрити панель",
   "sortableTabsStrip.aria.tabs": "Вкладки",
   "openChamberLogo.aria.logo": "Логотип OpenChamber",
+  "markdownRenderer.code.proposal": "Пропозиція",
   "markdownRenderer.code.actions.copyTitle": "Скопіювати код",
   "markdownRenderer.code.actions.copiedTitle": "Скопійовано",
   "markdownRenderer.table.actions.copyTitle": "Скопіювати таблицю",

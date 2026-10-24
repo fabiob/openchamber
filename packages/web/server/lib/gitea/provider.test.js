@@ -75,6 +75,37 @@ describe('Gitea provider authentication', () => {
     expect(await store.listInstances()).toEqual([]);
   });
 
+  describe('an instance that refuses anonymous reads', () => {
+    // `[service] REQUIRE_SIGNIN_VIEW = true`: the API answers 403 to any request without a token.
+    const locked = (version) => (call) => (call.headers.authorization === 'token pat-1'
+      ? { version }
+      : new Response(JSON.stringify({ message: 'Only signed in user is allowed to call APIs.' }), { status: 403 }));
+
+    it('offers the token form, then reads the version with the token at connect', async () => {
+      const { impl, calls } = await setup(forkNetworkRoutes({ 'GET /version': locked(fixtures.version.version) }));
+      await expect(impl.auth.capabilities({ instance: ORIGIN })).resolves.toMatchObject({
+        authentication: true,
+        authenticationMethods: { pat: { available: true } },
+      });
+      calls.length = 0;
+
+      await expect(impl.auth.connectToken({ instance: ORIGIN, token: 'pat-1' })).resolves.toMatchObject({ connected: true, user: { login: 'alice' } });
+      expect(calls.map((call) => [call.url.pathname, call.headers.authorization])).toEqual([
+        ['/api/v1/user', 'token pat-1'],
+        ['/api/v1/version', undefined],
+        ['/api/v1/version', 'token pat-1'],
+      ]);
+    });
+
+    it('still sends a locked Forgejo to the Forgejo card', async () => {
+      const { impl, store } = await setup(forkNetworkRoutes({ 'GET /version': locked('15.0.10+gitea-1.22.0') }));
+      await expect(impl.auth.connectToken({ instance: ORIGIN, token: 'pat-1' })).rejects.toMatchObject({
+        sourceControlResponse: { status: 409, body: { code: 'SOURCE_CONTROL_INSTANCE_OTHER_PROVIDER', provider: 'forgejo' } },
+      });
+      expect(await store.listInstances()).toEqual([]);
+    });
+  });
+
   it('writes an account off when Gitea refuses its token', async () => {
     let refuse = false;
     const { impl, events, store } = await setup(forkNetworkRoutes({

@@ -15,6 +15,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -28,6 +29,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict = {
   "opencodeCompatibility.bundled": "OpenCode, OpenChamber ile birlikte gelir. OpenCode v2 için OpenChamber’ı güncelleyin.",
@@ -93,6 +95,7 @@ export const dict = {
   ...usageStatsI18n.tr,
   ...webSearchI18n.tr,
   ...sessionWarmingI18n.tr,
+  ...heapSnapshotI18n.tr,
   ...overviewI18n.tr,
   ...isolatedSpacesI18n.tr,
   ...sourceBoardI18n.tr,
@@ -106,6 +109,7 @@ export const dict = {
   ...pluginsGridI18n.tr,
   ...integrationsCatalogI18n['tr'],
   ...diffFindI18n['tr'],
+  ...guestStatusViewI18n['tr'],
   'terminalView.actions.attachSelection': 'Seçili çıktıyı ekle',
   'terminalView.actions.copySelection': 'Seçili çıktıyı kopyala',
   'terminalView.toast.selectionCopied': 'Çıktı kopyalandı',
@@ -3249,6 +3253,7 @@ export const dict = {
   'mainLayout.mobile.closeDrawerAria': 'Çekmeceyi kapat',
   'sortableTabsStrip.aria.tabs': 'Sekmeler',
   'openChamberLogo.aria.logo': 'OpenChamber logosu',
+  'markdownRenderer.code.proposal': 'Öneri',
   'markdownRenderer.code.actions.copyTitle': 'Kodu kopyala',
   'markdownRenderer.code.actions.copiedTitle': 'Kopyalandı',
   'markdownRenderer.table.actions.copyTitle': 'Tabloyu kopyala',
@@ -3529,6 +3534,7 @@ export const dict = {
   'sessionAuth.expired.sendBlocked': 'Session süresi doldu — mesaj göndermek için oturum açın.',
   'chat.chatInput.toast.noModelSelected': 'Göndermeden önce bir provider ve model seçin.',
   'chat.toolPart.openFile': 'Dosyayı aç',
+  'chat.toolPart.openImageExpanded': 'Aç',
   'memoryDebugPanel.tabs.requests': 'Request\'ler',
   'memoryDebugPanel.requests.inFlight': 'Devam eden',
   'memoryDebugPanel.requests.peak': 'Zirve',

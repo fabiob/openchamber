@@ -513,7 +513,7 @@ export function detectPackageManager() {
 function detectPackageManagerFromInstallPath(pkgPath) {
   if (!pkgPath) return null;
   const normalized = pkgPath.replace(/\\/g, '/').toLowerCase();
-  if (normalized.includes('/.pnpm/') || normalized.includes('/pnpm/')) return 'pnpm';
+  if (normalized.includes('/.pnpm/') || normalized.includes('/pnpm/') || normalized.includes('/pnpm-store/')) return 'pnpm';
   if (normalized.includes('/.yarn/')) return 'yarn';
   if (normalized.includes('/.bun/') || normalized.includes('/bun/install/')) return 'bun';
   if (normalized.includes('/node_modules/')) return 'npm';

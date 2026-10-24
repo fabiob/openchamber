@@ -15,6 +15,7 @@ import { sessionNoticesI18n } from './session-notices.i18n';
 import { usageStatsI18n } from './usage-stats.i18n';
 import { webSearchI18n } from './websearch.i18n';
 import { sessionWarmingI18n } from './session-warming.i18n';
+import { heapSnapshotI18n } from './heap-snapshot.i18n';
 import { overviewI18n } from './overview.i18n';
 import { isolatedSpacesI18n } from './isolated-spaces.i18n';
 import { sourceBoardI18n } from './source-board.i18n';
@@ -28,6 +29,7 @@ import { mcpGridI18n } from './mcp-grid.i18n';
 import { pluginsGridI18n } from './plugins-grid.i18n';
 import { integrationsCatalogI18n } from './integrations-catalog.i18n';
 import { diffFindI18n } from './diff-find.i18n';
+import { guestStatusViewI18n } from './guest-status-view.i18n';
 
 export const dict = {
   'opencodeCompatibility.bundled': 'يأتي OpenCode مضمّنًا مع OpenChamber. حدّث OpenChamber للحصول على OpenCode v2.',
@@ -2655,6 +2657,7 @@ export const dict = {
   'chat.toolPart.showFormattedJson': 'إظهار JSON منسّق',
   'chat.toolPart.showNavigableJson': 'إظهار JSON قابل للتصفح',
   'chat.toolPart.openFile': 'فتح الملف',
+  'chat.toolPart.openImageExpanded': 'فتح',
   'chat.toolPart.openFileAtFirstChange': 'فتح الملف عند أول تغيير',
   'chat.toolPart.openFileDiff': 'فتح فروقات الملف',
   'chat.toolPart.copyOutput': 'نسخ المخرجات',
@@ -3389,6 +3392,7 @@ export const dict = {
   'mainLayout.mobile.closeDrawerAria': 'إغلاق الدرج',
   'sortableTabsStrip.aria.tabs': 'علامات التبويب',
   'openChamberLogo.aria.logo': 'شعار OpenChamber',
+  'markdownRenderer.code.proposal': 'اقتراح',
   'markdownRenderer.code.actions.copyTitle': 'نسخ الشيفرة',
   'markdownRenderer.code.actions.copiedTitle': 'تم النسخ',
   'markdownRenderer.table.actions.copyTitle': 'نسخ الجدول',
@@ -3814,6 +3818,7 @@ export const dict = {
   ...usageStatsI18n.ar,
   ...webSearchI18n.ar,
   ...sessionWarmingI18n.ar,
+  ...heapSnapshotI18n.ar,
   ...overviewI18n.ar,
   ...isolatedSpacesI18n.ar,
   ...sourceBoardI18n.ar,
@@ -3827,6 +3832,7 @@ export const dict = {
   ...pluginsGridI18n.ar,
   ...integrationsCatalogI18n['ar'],
   ...diffFindI18n['ar'],
+  ...guestStatusViewI18n['ar'],
   'settings.usage.page.state.claudeSignedOutTitle': 'لم يتم تسجيل الدخول إلى Claude Code',
   'settings.usage.page.state.claudeSignInCommand': 'شغّل هذا الأمر في الطرفية:',
   'settings.openchamber.visual.field.confirmFileTreeMove': 'التأكيد قبل نقل الملفات',
