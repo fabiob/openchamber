@@ -1,0 +1,92 @@
+name: nix-bake
+description: Bakes this system's dependency hashes onto the nix/hash-bake branch.
+inputs:
+  app-token:
+    description: GitHub App token used to push the branch and open the PR.
+    required: true
+  system:
+    description: The system this runner bakes hashes for (e.g. x86_64-linux).
+    required: true
+  create-pr:
+    description: 'true for the first leg: starts fresh from the trigger commit and force-pushes, replacing any stale bake branch.'
+    required: false
+    default: 'false'
+  base-ref:
+    description: Ref to base the bake branch on when a previous leg already pushed (nix/hash-bake). Defaults to the trigger commit.
+    required: false
+    default: ''
+outputs:
+  pushed:
+    description: 'true when new hashes were committed and pushed'
+    value: ${{ steps.push.outputs.pushed }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # v31
+      with:
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+    - uses: DeterminateSystems/magic-nix-cache-action@6221693898146dc97e38ad0e013488a16477a4c4
+    - name: Configure git as the bake bot
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.app-token }}
+      run: |
+        gh auth setup-git
+        git config user.name "openchamber-bake-bot"
+        git config user.email "openchamber-bake-bot@users.noreply.github.com"
+    - name: Check out the bake branch
+      shell: bash
+      run: |
+        if [ "${{ inputs.create-pr }}" = "true" ]; then
+          # First leg: start fresh from the trigger commit. The force-push
+          # below replaces any stale bake branch, which may predate main's
+          # current bun.lock.
+          git checkout -B nix/hash-bake
+        elif [ -n "${{ inputs.base-ref }}" ] && git fetch origin "nix/hash-bake"; then
+          # A previous leg pushed: build on its entries (they sit on top of
+          # this run's trigger commit).
+          git checkout -B nix/hash-bake FETCH_HEAD
+        else
+          git checkout -B nix/hash-bake
+        fi
+        git log --oneline -1
+    - name: Bake this system's hashes
+      shell: bash
+      run: nix run .#update-hashes
+    - name: Commit and push
+      id: push
+      shell: bash
+      run: |
+        git add nix/hashes.json flake.lock flake.nix
+        if git diff --cached --quiet; then
+          echo "hashes already current for ${{ inputs.system }}, nothing to bake"
+          echo "pushed=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        git commit -m "chore(nix): re-bake dependency hashes (${{ inputs.system }})"
+        if [ "${{ inputs.create-pr }}" = "true" ]; then
+          git push --force origin nix/hash-bake
+        else
+          git push --force-with-lease origin nix/hash-bake
+        fi
+        echo "pushed=true" >> "$GITHUB_OUTPUT"
+    - name: Open or update the bake PR
+      if: inputs.create-pr == 'true' && steps.push.outputs.pushed == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.app-token }}
+        SYSTEM: ${{ inputs.system }}
+      run: |
+        if [ "$(gh pr list --head nix/hash-bake --state open --json number --jq 'length')" = "1" ]; then
+          echo "an open PR for nix/hash-bake already exists, the force-push updated it"
+          exit 0
+        fi
+        gh pr create \
+          --base main \
+          --head nix/hash-bake \
+          --title "chore(nix): re-bake dependency hashes" \
+          --body "Automated re-bake after a change to bun.lock or packages/electron/package.json (${GITHUB_SHA}). Baked sequentially for x86_64-linux, aarch64-linux, and aarch64-darwin; the nix-build matrix proves each platform's hash on its own runner before this PR merges. Reproduce locally with nix run .#update-hashes."
