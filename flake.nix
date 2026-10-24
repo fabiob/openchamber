@@ -17,9 +17,12 @@
     }:
     let
       systems = [
-        # aarch64-linux is dropped until its dependency hash is verified on
-        # that hardware; re-add it with a baked hash from an aarch64 build.
+        # The nix-build.yml build matrix is what verifies each platform:
+        # bunCache's hash is platform-independent by design, so a platform is
+        # claimed exactly when its runner builds green.
         "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
       ];
       version = (builtins.fromJSON (builtins.readFile ./package.json)).version;
     in
@@ -63,10 +66,14 @@
                 # Their recipe derives the version suffix from the flake rev.
                 rev = opencode.rev or "dirty";
                 hash =
-                  if pkgs.stdenv.hostPlatform.isx86_64 then
-                    (builtins.fromJSON (builtins.readFile ./nix/hashes.json)).opencodeNodeModules
-                  else
-                    (builtins.fromJSON (builtins.readFile "${opencode}/nix/hashes.json")).nodeModules.${system};
+                  let
+                    ourHashes = builtins.fromJSON (builtins.readFile ./nix/hashes.json);
+                  in
+                  # Our per-system hash when this platform has been baked;
+                  # upstream's otherwise (their nix/hashes.json keys
+                  # nodeModules per system too).
+                  ourHashes.opencodeNodeModules.${system}
+                    or (builtins.fromJSON (builtins.readFile "${opencode}/nix/hashes.json")).nodeModules.${system};
               };
             }).overrideAttrs
               (old: {
@@ -119,9 +126,11 @@
           type = "app";
           program =
             toString (
-              nixpkgs.legacyPackages.${system}.writeShellScriptBin "update-hashes" (
-                builtins.readFile (self + "/nix/update-hashes.sh")
-              )
+              nixpkgs.legacyPackages.${system}.writeShellScriptBin "update-hashes" ''
+                # The script edits the per-system nix/hashes.json via jq.
+                export PATH="${nixpkgs.legacyPackages.${system}.jq}/bin:$PATH"
+                ${builtins.readFile (self + "/nix/update-hashes.sh")}
+              ''
             )
             + "/bin/update-hashes";
         };

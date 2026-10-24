@@ -219,7 +219,8 @@ stdenv.mkDerivation {
     homepage = "https://github.com/openchamber/openchamber";
     license = lib.licenses.mit;
     mainProgram = "openchamber-desktop";
-    # x86_64-linux only: the aarch64 dependency hash is unverified.
+    # x86_64-linux only: the desktop's darwin and arm64 builds are not yet
+    # verified; the CI build matrix covers the server package.
     platforms = [ "x86_64-linux" ];
   };
 }

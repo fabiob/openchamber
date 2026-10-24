@@ -1,4 +1,12 @@
 {
-  "bunDeps": "sha256-uum3lOBdZUF2On1Ebm3T7V7NMNGxjBsYJGaAjC8W8WU=",
-  "opencodeNodeModules": "sha256-UCy68yJ2yQSKL7EjmhEEEHrDnPvo/Btpb6krn7rSAeQ="
+  "bunCache": {
+    "x86_64-linux": "sha256-fFOpQaLRrTzpzLEWQyIv01O1hR++FpiIeW+Cxx7w3R4=",
+    "aarch64-linux": "sha256-fFOpQaLRrTzpzLEWQyIv01O1hR++FpiIeW+Cxx7w3R4=",
+    "aarch64-darwin": "sha256-iVgH5FZKlCM/QRPkaX8kXRb59wED+0fL55zX/94gObM="
+  },
+  "opencodeNodeModules": {
+    "x86_64-linux": "sha256-UCy68yJ2yQSKL7EjmhEEEHrDnPvo/Btpb6krn7rSAeQ=",
+    "aarch64-linux": "sha256-EuL9lZMbENUGgHUO9165/YiEnQkoP/5FQZWvgrJs+20=",
+    "aarch64-darwin": "sha256-Z3cbSZtVGiNmiU2BEbRXnjZ+onqk18IvIaPa6O470ew="
+  }
 }
